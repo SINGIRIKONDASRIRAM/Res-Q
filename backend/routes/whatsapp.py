@@ -1,0 +1,1 @@
+# Legacy WhatsApp router removed
