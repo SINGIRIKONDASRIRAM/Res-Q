@@ -830,6 +830,95 @@ export const api = {
 
   getCitizenReportStatus: (id) => api.getDisasterReportById(id),
 
+  // Reverse Geocoding Helper: Converts Latitude & Longitude to full human-readable address
+  reverseGeocode: async (lat, lng) => {
+    if (lat === undefined || lat === null || lng === undefined || lng === null) return null;
+    const nLat = Number(lat);
+    const nLng = Number(lng);
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLng}&zoom=18&addressdetails=1`, {
+        signal: controller.signal,
+        headers: { 'Accept-Language': 'en' }
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.display_name) {
+          const addr = data.address || {};
+          const shortTitle = addr.road || addr.suburb || addr.neighbourhood || addr.city_district || addr.city || data.display_name.split(',')[0];
+          return {
+            fullAddress: data.display_name,
+            shortAddress: `${shortTitle}, ${addr.city || addr.state_district || 'Chennai'}`,
+            road: addr.road || '',
+            neighbourhood: addr.neighbourhood || addr.suburb || '',
+            city: addr.city || addr.town || addr.village || 'Chennai',
+            state: addr.state || 'Tamil Nadu',
+            postcode: addr.postcode || '',
+            country: addr.country || 'India',
+            raw: data
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Online reverse geocoding fallback active:', err.message);
+    }
+
+    // Fallback: Geospatial synthesis based on coordinates
+    return {
+      fullAddress: `Geospatial Location (${nLat.toFixed(4)}° N, ${nLng.toFixed(4)}° E), Chennai Metropolitan Area, Tamil Nadu, India`,
+      shortAddress: `GPS Sector (${nLat.toFixed(4)}, ${nLng.toFixed(4)})`,
+      road: 'Metropolitan Sector',
+      neighbourhood: 'Chennai Zone',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      postcode: '600001',
+      country: 'India',
+      raw: null
+    };
+  },
+
+  // Online Address Geocode Search: Searches any address/place name anywhere
+  searchAddresses: async (query) => {
+    if (!query || query.trim().length < 2) return [];
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=6&addressdetails=1`, {
+        signal: controller.signal,
+        headers: { 'Accept-Language': 'en' }
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data.map((item, idx) => {
+            const addr = item.address || {};
+            const mainName = item.name || addr.road || addr.suburb || item.display_name.split(',')[0];
+            return {
+              id: `geo-search-${item.place_id || idx}-${Date.now()}`,
+              name: mainName,
+              category: 'Geocoded Address',
+              address: item.display_name,
+              latitude: parseFloat(item.lat),
+              longitude: parseFloat(item.lon),
+              phone: '108 / 112',
+              capacity: 'Verified Map Landmark',
+              status: 'Active Location',
+              iconEmoji: '📍',
+              rawObj: item,
+              type: 'geocoded_address'
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Address search fallback active:', err.message);
+    }
+    return [];
+  },
+
   // Safe Locations & Emergency Facilities
   getSafeLocations: (lat = null, lng = null, disaster_type = '') => {
     const params = new URLSearchParams();
@@ -842,11 +931,22 @@ export const api = {
     return request(`/api/safe-locations${query}`).catch(() => ({
       status: 'success',
       data: [
-        { id: "loc_h1", name: "Apollo Emergency & Trauma Hospital", facility_type: "Hospital", latitude: 13.0604, longitude: 80.2496, address: "21 Greams Lane, Thousand Lights", phone: "+91 44 2829 0200", capacity: "250 Emergency Beds", icu_available: 35, status: "Operational 24/7" },
-        { id: "loc_h2", name: "Government General Hospital & ICU Hub", facility_type: "Hospital", latitude: 13.0815, longitude: 80.2777, address: "EVR Periyar Salai, Park Town", phone: "+91 44 2530 5000", capacity: "500 Emergency Beds", icu_available: 60, status: "Operational 24/7" },
-        { id: "loc_s1", name: "Central High School Evacuation Shelter", facility_type: "Shelter", latitude: 13.0750, longitude: 80.2600, address: "Poonamallee High Road, Chennai", capacity: "1200 Evacuees", food_supply: "Sufficient (5 Days)", status: "Active Shelter Base" },
-        { id: "loc_s2", name: "Jawaharlal Nehru Stadium Relief Camp", facility_type: "Shelter", latitude: 13.0850, longitude: 80.2700, address: "Periamet, Chennai", capacity: "3500 Evacuees", food_supply: "Sufficient (7 Days)", status: "Active Shelter Base" },
-        { id: "loc_f1", name: "Central Fire Brigade & Hazmat Station", facility_type: "Fire Station", latitude: 13.0830, longitude: 80.2710, address: "Park Town, Chennai", capacity: "18 Emergency Vehicles", status: "High Alert Dispatch Base" }
+        { id: "loc_h1", name: "Apollo Emergency & Trauma Hospital", facility_type: "Hospital", latitude: 13.0604, longitude: 80.2496, address: "21 Greams Lane, Thousand Lights, Chennai", phone: "+91 44 2829 0200", capacity: "250 Emergency Beds (35 ICU)", status: "Operational 24/7" },
+        { id: "loc_h2", name: "Government General Hospital & ICU Hub (RGGH)", facility_type: "Hospital", latitude: 13.0815, longitude: 80.2777, address: "EVR Periyar Salai, Park Town, Chennai", phone: "+91 44 2530 5000", capacity: "500 Emergency Beds (60 ICU)", status: "Operational 24/7" },
+        { id: "loc_h3", name: "Tambaram District Trauma & Surgical Center", facility_type: "Hospital", latitude: 12.9240, longitude: 80.1290, address: "GST Road, Tambaram Sanatorium, Chennai", phone: "+91 44 2241 8000", capacity: "180 Emergency Beds (20 ICU)", status: "Operational 24/7" },
+        { id: "loc_h4", name: "Stanley Medical Apex Trauma Care", facility_type: "Hospital", latitude: 13.1030, longitude: 80.2870, address: "Old Jail Road, Royapuram, Chennai", phone: "+91 44 2528 1351", capacity: "320 Emergency Beds (40 ICU)", status: "Operational 24/7" },
+        { id: "loc_h5", name: "Chromepet Emergency Medical Base", facility_type: "Hospital", latitude: 12.9510, longitude: 80.1410, address: "Station Road, Chromepet, Chennai", phone: "+91 44 2265 1122", capacity: "120 Emergency Beds (15 ICU)", status: "Operational 24/7" },
+        { id: "loc_h6", name: "MIOT International Trauma Hospital", facility_type: "Hospital", latitude: 13.0247, longitude: 80.1785, address: "Mount-Poonamallee Road, Manapakkam / Porur", phone: "+91 44 4200 2288", capacity: "300 Emergency ICU Beds (45 ICU)", status: "Operational 24/7" },
+        { id: "loc_h7", name: "Sri Ramachandra Medical Center & Emergency Hub", facility_type: "Hospital", latitude: 13.0375, longitude: 80.1412, address: "No.1 Ramachandra Nagar, Porur, Chennai", phone: "+91 44 4592 8500", capacity: "450 Emergency Beds (55 ICU)", status: "Operational 24/7" },
+        { id: "loc_h8", name: "SIMS Super Specialty Emergency Hospital", facility_type: "Hospital", latitude: 13.0512, longitude: 80.2120, address: "Metro Station Complex, Vadapalani, Chennai", phone: "+91 44 2000 2000", capacity: "280 Trauma Beds (30 ICU)", status: "Operational 24/7" },
+        { id: "loc_h9", name: "Prashanth Emergency Hospital & Trauma Center", facility_type: "Hospital", latitude: 12.9780, longitude: 80.2220, address: "Velachery Main Road, Velachery, Chennai", phone: "+91 44 4227 7777", capacity: "190 Emergency Beds (25 ICU)", status: "Operational 24/7" },
+        { id: "loc_h10", name: "Gleneagles Global Trauma & Emergency City", facility_type: "Hospital", latitude: 12.9062, longitude: 80.1983, address: "Cheran Nagar, Perumbakkam / Medavakkam", phone: "+91 44 4477 7000", capacity: "350 Critical Care Beds (50 ICU)", status: "Operational 24/7" },
+        { id: "loc_h11", name: "Fortis Malar Emergency Care", facility_type: "Hospital", latitude: 13.0041, longitude: 80.2568, address: "First Main Road, Gandhi Nagar, Adyar, Chennai", phone: "+91 44 4289 2222", capacity: "160 Emergency Beds (20 ICU)", status: "Operational 24/7" },
+        { id: "loc_s1", name: "Tambaram Indoor Stadium Relief Shelter", facility_type: "Relief Shelter", latitude: 12.9200, longitude: 80.1250, address: "Gandhi Road, West Tambaram, Chennai", phone: "1800-425-1088", capacity: "1,500 Evacuees (Food/Water Active)", status: "Active Safe Zone" },
+        { id: "loc_s2", name: "Velachery Community Evacuation Hall", facility_type: "Relief Shelter", latitude: 12.9720, longitude: 80.2180, address: "Bypass Road, Velachery, Chennai", phone: "1800-425-1088", capacity: "1,200 Evacuees (Medical Aid Available)", status: "Active Safe Zone" },
+        { id: "loc_s3", name: "Jawaharlal Nehru Stadium Relief Camp", facility_type: "Relief Shelter", latitude: 13.0850, longitude: 80.2700, address: "Sydenhams Road, Periamet, Chennai", phone: "1800-425-1088", capacity: "3,500 Evacuees (Full Logistics Base)", status: "Active Safe Zone" },
+        { id: "loc_f1", name: "Tambaram Fire & Rescue Station", facility_type: "Fire Station", latitude: 12.9260, longitude: 80.1310, address: "Shanmugam Road, West Tambaram, Chennai", phone: "101 / +91 44 2226 5101", capacity: "6 Fire Engines + 2 Inflatable Boats", status: "High Alert Dispatch" },
+        { id: "loc_f2", name: "Guindy Industrial Fire & Hazmat Station", facility_type: "Fire Station", latitude: 13.0100, longitude: 80.2050, address: "Inner Ring Road, Guindy, Chennai", phone: "101 / +91 44 2234 1101", capacity: "8 Fire Tenders + Hazmat Unit", status: "High Alert Dispatch" }
       ]
     }));
   }

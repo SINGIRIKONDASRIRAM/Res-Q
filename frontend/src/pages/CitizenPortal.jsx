@@ -107,21 +107,32 @@ export const CitizenPortal = ({ onBackToAdmin }) => {
 
     setGettingLocation(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         setLatitude(lat.toFixed(6));
         setLongitude(lng.toFixed(6));
-        setLocationName(`Current GPS Position (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
         setSelectedLocationId('custom');
-        setGettingLocation(false);
+        
+        try {
+          const geo = await api.reverseGeocode(lat, lng);
+          if (geo && geo.display_name) {
+            setLocationName(geo.display_name);
+          } else {
+            setLocationName(`GPS Position (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+          }
+        } catch {
+          setLocationName(`GPS Position (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+        } finally {
+          setGettingLocation(false);
+        }
       },
       (err) => {
         // Fallback silently to default Chennai location (Tambaram) if blocked
         console.warn('Auto geolocation notice:', err.message);
         setGettingLocation(false);
       },
-      { timeout: 6000, enableHighAccuracy: true }
+      { timeout: 8000, enableHighAccuracy: true }
     );
   }, []);
 
@@ -154,14 +165,25 @@ export const CitizenPortal = ({ onBackToAdmin }) => {
     setLocationError('');
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         setLatitude(lat.toFixed(6));
         setLongitude(lng.toFixed(6));
-        setLocationName(`GPS Position (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
         setSelectedLocationId('custom');
-        setGettingLocation(false);
+        
+        try {
+          const geo = await api.reverseGeocode(lat, lng);
+          if (geo && geo.display_name) {
+            setLocationName(geo.display_name);
+          } else {
+            setLocationName(`GPS Position (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+          }
+        } catch {
+          setLocationName(`GPS Position (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+        } finally {
+          setGettingLocation(false);
+        }
       },
       (err) => {
         console.error('Geolocation error:', err);

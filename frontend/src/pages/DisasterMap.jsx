@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import L from 'leaflet';
-import { MapContainer, TileLayer, CircleMarker, Circle, Popup, Polyline, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Circle, Popup, Polyline, Marker, useMap, useMapEvents } from 'react-leaflet';
 import { PriorityBadge } from '../components/PriorityBadge';
 import { 
   MessageSquare, 
@@ -42,7 +42,14 @@ import {
   Minimize2,
   ChevronDown,
   ChevronUp,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Copy,
+  ExternalLink,
+  Navigation2,
+  LocateFixed,
+  MapPinned,
+  Loader2,
+  User
 } from 'lucide-react';
 
 // Tile Provider Configurations & API Key Presets (TomTom Maps Primary)
@@ -302,6 +309,39 @@ const MapResizeHandler = ({ isExpanded }) => {
     return () => clearTimeout(timer);
   }, [isExpanded, map]);
   return null;
+};
+
+// Helper for interactive click on map to inspect address
+const MapClickHandler = ({ onMapClick }) => {
+  useMapEvents({
+    click: (e) => {
+      if (onMapClick) onMapClick(e.latlng);
+    }
+  });
+  return null;
+};
+
+// Custom animated pinpoint marker icon for inspected map location
+const createInspectedMarkerIcon = () => {
+  const htmlString = `
+    <div class="relative flex items-center justify-center group cursor-pointer" style="width: 44px; height: 44px;">
+      <span class="animate-ping absolute inline-flex h-9 w-9 rounded-full bg-cyan-400 opacity-75"></span>
+      <div class="relative w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 via-blue-600 to-indigo-950 border-2 border-white text-white shadow-2xl flex items-center justify-center text-base font-black">
+        📍
+      </div>
+      <div class="absolute -bottom-4 bg-slate-950 text-cyan-300 border border-cyan-400 text-[8.5px] font-black px-1.5 py-0.5 rounded-md shadow-md whitespace-nowrap">
+        Inspected Pin
+      </div>
+    </div>
+  `;
+
+  return L.divIcon({
+    className: 'custom-inspected-icon',
+    html: htmlString,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -22]
+  });
 };
 
 // Helper to fetch real turn-by-turn on-road driving geometry (Google Maps / TomTom / OSRM style)
@@ -703,6 +743,12 @@ export const DisasterMapPage = () => {
   const [selectedHospitalVector, setSelectedHospitalVector] = useState(null);
   const [mapFocusCenter, setMapFocusCenter] = useState(null);
 
+  // Inspected Pinpoint Location State (Reverse Geocoded Address)
+  const [inspectedLocation, setInspectedLocation] = useState(null);
+  const [copyNotice, setCopyNotice] = useState(null);
+  const [geocodedSearchResults, setGeocodedSearchResults] = useState([]);
+  const [isSearchingGeocode, setIsSearchingGeocode] = useState(false);
+
   // Layer & Filter Toggles
   const [showDangerZones, setShowDangerZones] = useState(true);
   const [showWeatherOverlay, setShowWeatherOverlay] = useState(true);
@@ -732,6 +778,30 @@ export const DisasterMapPage = () => {
   const [customTileUrl, setCustomTileUrl] = useState(() => localStorage.getItem('resq_custom_tile_url') || '');
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [keySavedNotice, setKeySavedNotice] = useState(false);
+
+  // Copy text helper
+  const handleCopyText = (text, label = 'Address') => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopyNotice(`Copied ${label} to clipboard!`);
+    setTimeout(() => setCopyNotice(null), 2500);
+  };
+
+  // Debounced online geocoding search when typing in location search box
+  useEffect(() => {
+    if (!locationSearchQuery || locationSearchQuery.trim().length < 2) {
+      setGeocodedSearchResults([]);
+      setIsSearchingGeocode(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearchingGeocode(true);
+      const results = await api.searchAddresses(locationSearchQuery);
+      setGeocodedSearchResults(results || []);
+      setIsSearchingGeocode(false);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [locationSearchQuery]);
 
   // Calculate spatial offset for overlapping markers in the same location/region
   const getReportCoordinates = (rpt, allReports) => {
@@ -817,6 +887,39 @@ export const DisasterMapPage = () => {
     return list.slice(0, 5);
   };
 
+  // Handle interactive click on the map to reverse geocode and inspect address
+  const handleMapClick = async (latlng) => {
+    const lat = Number(latlng.lat);
+    const lng = Number(latlng.lng);
+    const nearestHospList = getNearestSafeLocationsForReport(lat, lng, 'General Emergency', 'Clicked Location');
+    const nearestHosp = nearestHospList && nearestHospList.length > 0 ? nearestHospList[0] : null;
+
+    setInspectedLocation({
+      lat,
+      lng,
+      fullAddress: 'Resolving address from satellite & map telemetry...',
+      shortAddress: `GPS Coordinates (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+      nearestHospital: nearestHosp,
+      loading: true
+    });
+    setMapFocusCenter([lat, lng]);
+
+    const geoResult = await api.reverseGeocode(lat, lng);
+    if (geoResult) {
+      setInspectedLocation(prev => prev && Math.abs(prev.lat - lat) < 0.0001 && Math.abs(prev.lng - lng) < 0.0001 ? {
+        ...prev,
+        fullAddress: geoResult.fullAddress,
+        shortAddress: geoResult.shortAddress,
+        city: geoResult.city,
+        state: geoResult.state,
+        postcode: geoResult.postcode,
+        road: geoResult.road,
+        neighbourhood: geoResult.neighbourhood,
+        loading: false
+      } : prev);
+    }
+  };
+
   // Handle selecting a report to trigger floating side tab and map focus
   const handleSelectReport = (rpt) => {
     setSelectedCitizenReport(rpt);
@@ -825,6 +928,19 @@ export const DisasterMapPage = () => {
     const [lat, lng] = getReportCoordinates(rpt, filteredReports);
     setMapFocusCenter([lat, lng]);
     setShowSafeLocations(true);
+
+    const nearestHospList = getNearestSafeLocationsForReport(lat, lng, rpt.disaster_type, rpt.location);
+    const nearestHosp = nearestHospList && nearestHospList.length > 0 ? nearestHospList[0] : null;
+    const locAddress = rpt.location || rpt.address || `GPS Coordinates (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+
+    setInspectedLocation({
+      lat,
+      lng,
+      fullAddress: locAddress,
+      shortAddress: rpt.location || 'Incident Site',
+      nearestHospital: nearestHosp,
+      loading: false
+    });
   };
 
   // Handle selecting a hospital/facility to draw active turn-by-turn on-road driving route
@@ -875,6 +991,18 @@ export const DisasterMapPage = () => {
 
     setSelectedLocationNotice(`Centered map on "${item.name}"`);
     setTimeout(() => setSelectedLocationNotice(null), 3500);
+
+    const nearestHospList = getNearestSafeLocationsForReport(item.latitude, item.longitude, 'General Emergency', item.name);
+    const nearestHosp = nearestHospList && nearestHospList.length > 0 ? nearestHospList[0] : null;
+
+    setInspectedLocation({
+      lat: item.latitude,
+      lng: item.longitude,
+      fullAddress: item.address,
+      shortAddress: item.name,
+      nearestHospital: nearestHosp,
+      loading: false
+    });
 
     if (item.type === 'citizen_sos') {
       setSelectedCitizenReport(item.rawObj);
@@ -992,7 +1120,7 @@ export const DisasterMapPage = () => {
   const sheltersList = safeLocations.filter(loc => loc.facility_type === 'Relief Shelter');
   const fireList = safeLocations.filter(loc => loc.facility_type === 'Fire Station');
 
-  // Combine all locations into a unified searchable directory
+  // Combine all locations into a unified searchable directory with exact addresses
   const getAllLocationsCombined = () => {
     let list = [];
     
@@ -1016,15 +1144,16 @@ export const DisasterMapPage = () => {
 
     // 2. Threat / Danger Areas
     areas.forEach(area => {
+      const areaAddr = area.location || `${area.area_name}, Chennai, Tamil Nadu, India`;
       list.push({
         id: `area-${area.id}`,
         name: area.area_name,
         category: 'Threat Zone',
-        address: `Threat Sector • Danger Score: ${area.priority_score}/100`,
+        address: areaAddr,
         latitude: area.latitude || 13.0827,
         longitude: area.longitude || 80.2707,
-        phone: 'N/A',
-        capacity: `Pop: ${area.population?.toLocaleString() || 'N/A'} • ${area.severity}`,
+        phone: '108',
+        capacity: `Pop: ${area.population?.toLocaleString() || 'N/A'} • Danger Score: ${area.priority_score}/100`,
         status: area.severity || 'Active',
         iconEmoji: '⚠️',
         rawObj: area,
@@ -1032,14 +1161,17 @@ export const DisasterMapPage = () => {
       });
     });
 
-    // 3. Citizen SOS Emergency Reports
+    // 3. Citizen SOS Emergency Reports with clear human-readable addresses
     reports.filter(isCitizenReport).forEach(rpt => {
       const [lat, lng] = getReportCoordinates(rpt, reports);
+      const locStr = rpt.location || rpt.address || `GPS Coordinates (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+      const reporterInfo = `${rpt.reporter_name || rpt.name || 'Citizen'} (${rpt.reporter_phone || 'N/A'})`;
       list.push({
         id: `sos-${rpt.id}`,
-        name: `${rpt.disaster_type || 'Emergency SOS'} at ${rpt.location || 'Incident Site'}`,
+        name: `${rpt.disaster_type || 'Emergency SOS'} at ${locStr}`,
         category: 'Citizen SOS',
-        address: `Reporter: ${rpt.reporter_name || rpt.name || 'Citizen'} (${rpt.reporter_phone || 'N/A'})`,
+        address: locStr,
+        reporter: reporterInfo,
         latitude: lat,
         longitude: lng,
         phone: rpt.reporter_phone || '108',
@@ -1062,7 +1194,7 @@ export const DisasterMapPage = () => {
         id: `veh-${veh.id}`,
         name: `${veh.vehicle_id || veh.type} (${veh.type})`,
         category: 'Vehicle',
-        address: `Base: ${veh.location} • Driver: ${veh.driver || 'ResQ Crew'}`,
+        address: `Operational Base: ${veh.location} • Driver: ${veh.driver || 'ResQ Crew'}`,
         latitude: lat,
         longitude: lng,
         phone: '108',
@@ -1079,17 +1211,25 @@ export const DisasterMapPage = () => {
 
   const combinedLocations = getAllLocationsCombined();
 
-  // Filtered locations array for Location Drawer
-  const filteredLocationsList = combinedLocations.filter(loc => {
-    if (locationCategoryFilter !== 'All' && loc.category !== locationCategoryFilter) {
-      return false;
-    }
-    if (locationSearchQuery.trim() !== '') {
-      const q = locationSearchQuery.toLowerCase();
-      return loc.name.toLowerCase().includes(q) || loc.address.toLowerCase().includes(q) || loc.category.toLowerCase().includes(q);
-    }
-    return true;
-  });
+  // Filtered locations array for Location Drawer (including online geocoded results)
+  const filteredLocationsList = [
+    ...combinedLocations.filter(loc => {
+      if (locationCategoryFilter !== 'All' && loc.category !== locationCategoryFilter) {
+        return false;
+      }
+      if (locationSearchQuery.trim() !== '') {
+        const q = locationSearchQuery.toLowerCase();
+        return (
+          loc.name.toLowerCase().includes(q) ||
+          loc.address.toLowerCase().includes(q) ||
+          loc.category.toLowerCase().includes(q) ||
+          (loc.reporter && loc.reporter.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    }),
+    ...(locationCategoryFilter === 'All' || locationCategoryFilter === 'Geocoded Address' ? geocodedSearchResults : [])
+  ];
 
   // Filtered areas & reports for Leaflet rendering
   const filteredAreas = areas.filter(a => {
@@ -1443,6 +1583,9 @@ export const DisasterMapPage = () => {
             url={getActiveTileUrl()}
           />
 
+          {/* Click anywhere on map to reverse geocode exact human-readable address */}
+          <MapClickHandler onMapClick={handleMapClick} />
+
           {/* Smooth Map Zoom & Pan Controller */}
           <MapFlyTo center={mapFocusCenter} zoom={14} />
 
@@ -1463,11 +1606,43 @@ export const DisasterMapPage = () => {
             </Popup>
           </CircleMarker>
 
+          {/* INSPECTED PINPOINT MAP CLICK MARKER */}
+          {inspectedLocation && (
+            <Marker
+              position={[inspectedLocation.lat, inspectedLocation.lng]}
+              icon={createInspectedMarkerIcon()}
+            >
+              <Popup autoPan={false}>
+                <div className="p-2 space-y-1.5 max-w-xs text-xs text-slate-900">
+                  <div className="flex items-center justify-between border-b pb-1">
+                    <span className="font-extrabold text-blue-900 text-xs flex items-center gap-1">
+                      📍 Inspected Location Address
+                    </span>
+                    <span className="text-[9px] bg-cyan-100 text-cyan-900 font-bold px-1.5 py-0.5 rounded">
+                      GPS Telemetry
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-800 font-medium leading-snug">
+                    {inspectedLocation.loading ? 'Resolving address from satellite telemetry...' : inspectedLocation.fullAddress}
+                  </p>
+                  <p className="text-[10px] font-mono text-slate-500">
+                    GPS: {inspectedLocation.lat.toFixed(5)}° N, {inspectedLocation.lng.toFixed(5)}° E
+                  </p>
+                  {inspectedLocation.nearestHospital && (
+                    <div className="bg-emerald-50 border border-emerald-200 p-1.5 rounded text-[10px] text-emerald-900">
+                      🏥 Nearest Facility: <strong>{inspectedLocation.nearestHospital.name}</strong> ({inspectedLocation.nearestHospital.distance_km} km)
+                    </div>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          )}
+
           {/* SAFE HOSPITALS, SHELTERS & FIRE STATIONS MARKERS */}
           {showSafeLocations && safeLocations
             .filter((loc) => {
               if (locationCategoryFilter === 'All') return true;
-              if (locationCategoryFilter === 'Threat Zone' || locationCategoryFilter === 'Citizen SOS' || locationCategoryFilter === 'Vehicle') return true;
+              if (locationCategoryFilter === 'Threat Zone' || locationCategoryFilter === 'Citizen SOS' || locationCategoryFilter === 'Vehicle' || locationCategoryFilter === 'Geocoded Address') return true;
               return loc.facility_type === locationCategoryFilter;
             })
             .map((loc) => {
@@ -1488,7 +1663,7 @@ export const DisasterMapPage = () => {
                         <span className="text-[10px] font-bold text-emerald-700 uppercase">{loc.facility_type} • {loc.status}</span>
                       </div>
                     </div>
-                    <p className="text-[11px] text-slate-600">{loc.address}</p>
+                    <p className="text-[11px] text-slate-600 font-medium">📍 {loc.address}</p>
                     <div className="bg-emerald-50 border border-emerald-200 p-1.5 rounded text-[11px] space-y-0.5">
                       <div className="flex justify-between font-bold text-emerald-900">
                         <span>Capacity / Beds:</span>
@@ -1892,17 +2067,24 @@ export const DisasterMapPage = () => {
                 <div className="p-3 bg-slate-900/60 backdrop-blur-md border-b border-white/10 space-y-2">
                   {/* Search Input */}
                   <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-cyan-400/70 absolute left-2.5 top-2.5" />
+                    {isSearchingGeocode ? (
+                      <Loader2 className="w-3.5 h-3.5 text-cyan-400 absolute left-2.5 top-2.5 animate-spin" />
+                    ) : (
+                      <Search className="w-3.5 h-3.5 text-cyan-400/70 absolute left-2.5 top-2.5" />
+                    )}
                     <input 
                       type="text"
                       value={locationSearchQuery}
                       onChange={(e) => setLocationSearchQuery(e.target.value)}
-                      placeholder="Search locations, hospitals, shelters..."
+                      placeholder="Search any address, street, landmark, hospital..."
                       className="w-full bg-slate-950/80 border border-white/15 rounded-xl pl-8 pr-8 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400/80 backdrop-blur-sm"
                     />
                     {locationSearchQuery && (
                       <button 
-                        onClick={() => setLocationSearchQuery('')}
+                        onClick={() => {
+                          setLocationSearchQuery('');
+                          setGeocodedSearchResults([]);
+                        }}
                         className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white"
                       >
                         <X className="w-3 h-3" />
@@ -1938,7 +2120,62 @@ export const DisasterMapPage = () => {
 
                 {/* Location Cards List */}
                 <div className="p-3 overflow-y-auto space-y-2 max-h-[380px]">
-                  {filteredLocationsList.length === 0 ? (
+                  {/* Nominatim / OpenStreetMap Live Geocoded Results if any */}
+                  {geocodedSearchResults.length > 0 && (
+                    <div className="space-y-1.5 pb-2 mb-2 border-b border-cyan-500/30">
+                      <div className="flex items-center justify-between text-[10px] font-black text-cyan-400 uppercase tracking-wider px-1">
+                        <span className="flex items-center gap-1">
+                          <Compass className="w-3 h-3" /> Live Geocoded Address Results ({geocodedSearchResults.length})
+                        </span>
+                        <span className="text-[9px] text-slate-400">OSM Nominatim</span>
+                      </div>
+                      {geocodedSearchResults.map((geo, idx) => (
+                        <div
+                          key={`geo-${idx}`}
+                          onClick={() => {
+                            flyToCustomLocation(geo.lat, geo.lng, geo.display_name, 16);
+                            setInspectedLocation({
+                              lat: geo.lat,
+                              lng: geo.lng,
+                              address: geo.display_name,
+                              title: geo.name || 'Searched Location',
+                              source: 'Nominatim OpenStreetMap'
+                            });
+                          }}
+                          className="p-2.5 rounded-xl border bg-cyan-950/40 border-cyan-500/40 hover:bg-cyan-900/50 hover:border-cyan-300 cursor-pointer transition-all space-y-1"
+                        >
+                          <div className="flex justify-between items-start">
+                            <span className="font-extrabold text-cyan-200 text-xs flex items-center gap-1">
+                              📍 {geo.name}
+                            </span>
+                            <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded font-mono font-bold">
+                              {geo.lat.toFixed(4)}, {geo.lng.toFixed(4)}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-300 leading-snug flex items-start gap-1">
+                            <MapPin className="w-3 h-3 text-cyan-400 shrink-0 mt-0.5" />
+                            <span>{geo.display_name}</span>
+                          </p>
+                          <div className="flex justify-between items-center text-[9.5px] pt-1 border-t border-cyan-500/20">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyText(geo.display_name, 'Address copied to clipboard!');
+                              }}
+                              className="text-slate-400 hover:text-cyan-300 flex items-center gap-1"
+                            >
+                              <Copy className="w-3 h-3" /> Copy Address
+                            </button>
+                            <span className="text-cyan-400 font-bold flex items-center gap-1">
+                              <Crosshair className="w-3 h-3" /> Fly to Location
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {filteredLocationsList.length === 0 && geocodedSearchResults.length === 0 ? (
                     <div className="text-center py-6 text-slate-400 text-xs">
                       No matching locations found for "{locationSearchQuery}".
                     </div>
@@ -1958,7 +2195,7 @@ export const DisasterMapPage = () => {
                               : 'bg-slate-900/60 border-white/10 hover:border-cyan-400/50 hover:bg-slate-900/90'
                           }`}
                         >
-                          <div className="flex justify-between items-start">
+                          <div className="flex justify-between items-start gap-2">
                             <span className="font-extrabold text-white text-xs flex items-center gap-1.5 leading-tight">
                               <span className="text-sm">{item.iconEmoji}</span> {item.name}
                             </span>
@@ -1966,10 +2203,44 @@ export const DisasterMapPage = () => {
                               {item.category}
                             </span>
                           </div>
-                          <p className="text-[10.5px] text-slate-300 mt-1 leading-snug">{item.address}</p>
+
+                          {/* Full Human-Readable Address with Icon */}
+                          <div className="mt-1.5 flex items-start gap-1.5 bg-slate-950/50 p-1.5 rounded-lg border border-white/5">
+                            <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-[11px] text-slate-200 leading-snug font-medium break-words">
+                                {item.address || 'Address information unavailable'}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[9px] font-mono text-cyan-400/80 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/40">
+                                  GPS: {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopyText(item.address, 'Address copied to clipboard!');
+                                  }}
+                                  className="text-[9px] text-slate-400 hover:text-cyan-300 flex items-center gap-0.5 cursor-pointer"
+                                  title="Copy address text"
+                                >
+                                  <Copy className="w-2.5 h-2.5" /> Copy
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Reporter Info for SOS reports */}
+                          {item.rawReport && (
+                            <div className="mt-1 px-1.5 py-0.5 bg-rose-950/40 border border-rose-800/30 rounded text-[9.5px] text-rose-300 flex items-center justify-between">
+                              <span className="truncate">
+                                👤 {item.rawReport.reporter_name || 'Anonymous'} ({item.rawReport.reporter_phone || 'No phone'})
+                              </span>
+                              <span className="font-bold text-rose-400">Score: {item.rawReport.priority_score?.toFixed(0) || 75}/100</span>
+                            </div>
+                          )}
                           
                           <div className="flex justify-between items-center text-[10px] mt-2 pt-1.5 border-t border-white/10">
-                            <span className="text-emerald-400 font-bold truncate max-w-[160px]">
+                            <span className="text-emerald-400 font-bold truncate max-w-[140px]">
                               {item.capacity}
                             </span>
                             <div className="flex items-center gap-1.5 shrink-0">
@@ -2030,7 +2301,7 @@ export const DisasterMapPage = () => {
                     Citizen Emergency Telemetry
                   </span>
                   <h3 className="font-extrabold text-xs text-white truncate max-w-[240px]">
-                    {selectedCitizenReport.disaster_type} at {selectedCitizenReport.location}
+                    {selectedCitizenReport.disaster_type} Incident
                   </h3>
                 </div>
               </div>
@@ -2056,6 +2327,52 @@ export const DisasterMapPage = () => {
               <>
                 {/* Scrollable Floating Content */}
                 <div className="p-4 overflow-y-auto space-y-4 text-xs font-sans max-h-[510px]">
+                  
+                  {/* FULL INCIDENT LOCATION & ADDRESS HIGHLIGHT CARD */}
+                  <div className="bg-slate-900/80 border border-cyan-500/40 p-3 rounded-xl space-y-2 backdrop-blur-md shadow-lg shadow-cyan-950/30">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <MapPinned className="w-3.5 h-3.5 text-cyan-400" /> Incident Location & Address
+                      </span>
+                      <span className="text-[9px] font-mono text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-700/50">
+                        {(() => {
+                          const [lat, lng] = getReportCoordinates(selectedCitizenReport, reports);
+                          return `${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E`;
+                        })()}
+                      </span>
+                    </div>
+
+                    <p className="text-white text-xs font-bold leading-snug">
+                      {selectedCitizenReport.location || 'Chennai Regional Incident Area, Tamil Nadu'}
+                    </p>
+
+                    <div className="flex items-center justify-between pt-1.5 border-t border-white/10 text-[10px]">
+                      <button
+                        onClick={() => {
+                          const addr = selectedCitizenReport.location || 'Chennai, Tamil Nadu';
+                          handleCopyText(addr, 'Incident address copied!');
+                        }}
+                        className="text-cyan-300 hover:text-cyan-200 flex items-center gap-1 font-bold cursor-pointer"
+                      >
+                        <Copy className="w-3 h-3 text-cyan-400" /> Copy Full Address
+                      </button>
+
+                      {(() => {
+                        const [lat, lng] = getReportCoordinates(selectedCitizenReport, reports);
+                        return (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-400 hover:underline flex items-center gap-1 font-bold"
+                          >
+                            <ExternalLink className="w-3 h-3" /> View in Google Maps
+                          </a>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
                   {/* Priority & Citizen Header Info */}
                   <div className="grid grid-cols-2 gap-2.5">
                     <div className="bg-slate-900/60 border border-white/10 p-2.5 rounded-xl space-y-0.5 backdrop-blur-md">
@@ -2197,6 +2514,64 @@ export const DisasterMapPage = () => {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* FLOATING MAP PINPOINT ADDRESS INSPECTOR CARD (Bottom-Left above Weather) */}
+        {inspectedLocation && (
+          <div className="absolute bottom-28 left-4 z-30 max-w-sm w-full bg-slate-950/90 backdrop-blur-xl text-white border border-cyan-400/50 rounded-2xl shadow-2xl shadow-cyan-950/60 p-3.5 space-y-2.5 animate-in fade-in slide-in-from-bottom-2 duration-200 ring-1 ring-white/15">
+            <div className="flex items-center justify-between border-b border-white/10 pb-2">
+              <span className="text-xs font-black text-cyan-300 flex items-center gap-1.5 uppercase tracking-wider">
+                <MapPinned className="w-4 h-4 text-cyan-400" /> Inspected Map Pinpoint
+              </span>
+              <button
+                onClick={() => setInspectedLocation(null)}
+                className="p-1 bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer"
+                title="Dismiss Pinpoint"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">
+                Reverse Geocoded Address:
+              </span>
+              <p className="text-xs text-white font-bold leading-snug bg-slate-900/80 p-2 rounded-xl border border-white/10">
+                {inspectedLocation.address}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between text-[10px] pt-1">
+              <span className="font-mono text-cyan-300/80 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40">
+                {inspectedLocation.lat.toFixed(5)}° N, {inspectedLocation.lng.toFixed(5)}° E
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleCopyText(inspectedLocation.address, 'Address copied to clipboard!')}
+                  className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Copy className="w-3 h-3" /> Copy Address
+                </button>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${inspectedLocation.lat},${inspectedLocation.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-400 hover:underline flex items-center gap-0.5 font-bold"
+                >
+                  <ExternalLink className="w-3 h-3" /> Maps
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Global Floating Copy Notification Toast */}
+        {copyNotice && (
+          <div className="fixed bottom-6 right-6 z-50 bg-slate-900/95 text-emerald-300 border border-emerald-400/80 px-4 py-2.5 rounded-xl shadow-2xl text-xs font-black flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 backdrop-blur-md">
+            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{copyNotice}</span>
           </div>
         )}
       </div>
