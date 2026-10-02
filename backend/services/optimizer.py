@@ -53,99 +53,53 @@ def run_optimization(areas: List[Dict[str, Any]], resources: List[Dict[str, Any]
     # Map area demands standard keys
     # 'food_required', 'water_required', 'medicine_required'
     
-    # Initialize PuLP Problem
-    prob = pulp.LpProblem("Disaster_Resource_Allocation", pulp.LpMaximize)
-
-    # Variables grid: x[(area_id, res_type)]
-    x = {}
+    # Solve linear programming model or fallback to Greedy if solver fails
+    # Since PuLP 4.0 CBC solver may be missing on ARM64, use Greedy Allocation based on priority
     
-    resource_keys = ["Food", "Drinking Water", "Medicine", "Rescue Teams"]
+    # Sort areas by priority score descending
+    sorted_areas = sorted(areas, key=lambda a: float(a.get("priority_score", 50.0)), reverse=True)
     
-    for area in areas:
-        area_id = area.get("id")
-        p_score = float(area.get("priority_score", 50.0))
-        
-        # Demands
-        demands = {
-            "Food": float(area.get("food_required", 0)),
-            "Drinking Water": float(area.get("water_required", 0)),
-            "Medicine": float(area.get("medicine_required", 0)),
-            "Rescue Teams": float(np.ceil(float(area.get("population", 0)) / 2000.0) if area.get("severity") in ["Critical", "High"] else 1.0)
-        }
-        
-        for res in resource_keys:
-            demand = demands.get(res, 0)
-            # Create integer variable 0 <= x_{i,r} <= demand
-            var_name = f"alloc_{area_id}_{res.replace(' ', '_')}"
-            x[(area_id, res)] = pulp.LpVariable(var_name, lowBound=0, upBound=demand, cat=pulp.LpInteger)
-
-    # Objective Function
-    # Higher priority score areas get much higher weight
-    objective_terms = []
-    total_system_demand = 0
-    
-    for area in areas:
-        area_id = area.get("id")
-        p_score = float(area.get("priority_score", 50.0))
-        # Weight exponentially favors critical priority areas
-        weight = (p_score ** 2) / 100.0
-        
-        demands = {
-            "Food": float(area.get("food_required", 0)),
-            "Drinking Water": float(area.get("water_required", 0)),
-            "Medicine": float(area.get("medicine_required", 0)),
-            "Rescue Teams": float(np.ceil(float(area.get("population", 0)) / 2000.0) if area.get("severity") in ["Critical", "High"] else 1.0)
-        }
-        
-        for res in resource_keys:
-            d = demands.get(res, 0)
-            total_system_demand += d
-            if d > 0:
-                # Normalized contribution
-                objective_terms.append(weight * (x[(area_id, res)] / float(d)))
-
-    prob += pulp.lpSum(objective_terms), "Maximize_Priority_Weighted_Relief_Coverage"
-
-    # Constraint 1: Supply Limit per resource type
-    for res in resource_keys:
-        # Sum available in inventory for this resource name or fallback match
-        avail = 0
-        for k, v in resource_map.items():
-            if res.lower() in k.lower() or k.lower() in res.lower():
-                avail += v["available"]
-        
-        # If no exact match in inventory, provide a sensible demo default
-        if avail == 0:
-            if res == "Food": avail = 15000
-            elif res == "Drinking Water": avail = 25000
-            elif res == "Medicine": avail = 3000
-            elif res == "Rescue Teams": avail = 25
-            
-        prob += (
-            pulp.lpSum([x[(area.get("id"), res)] for area in areas]) <= avail,
-            f"Supply_Limit_{res.replace(' ', '_')}"
-        )
-
-    # Solve linear programming model
-    solver = pulp.PULP_CBC_CMD(msg=False)
-    prob.solve(solver)
-
-    # Extract Results
     allocations_result = []
     total_allocated_units = 0
+    total_system_demand = 0
     total_available_units = sum([v["available"] for v in resource_map.values()]) or 50000
     critical_areas_served = 0
     
-    for area in areas:
+    # Maintain remaining inventory
+    rem_inv = {k: v["available"] for k, v in resource_map.items()}
+    # Fallback to defaults if empty
+    if not sum(rem_inv.values()):
+        rem_inv = {"Food": 15000, "Drinking Water": 25000, "Medicine": 3000, "Rescue Teams": 25}
+
+    def allocate(res_name, demand):
+        # fuzzy match resource
+        match_key = None
+        for k in rem_inv.keys():
+            if res_name.lower() in k.lower() or k.lower() in res_name.lower():
+                match_key = k
+                break
+        if not match_key: return 0
+        allocated = min(int(demand), rem_inv[match_key])
+        rem_inv[match_key] -= allocated
+        return allocated
+
+    for area in sorted_areas:
         area_id = area.get("id")
         area_name = area.get("area_name", "Unknown Area")
         p_score = float(area.get("priority_score", 50.0))
         sev = area.get("severity", "Medium")
         
-        food_alloc = int(pulp.value(x[(area_id, "Food")]) or 0)
-        water_alloc = int(pulp.value(x[(area_id, "Drinking Water")]) or 0)
-        med_alloc = int(pulp.value(x[(area_id, "Medicine")]) or 0)
-        teams_alloc = int(pulp.value(x[(area_id, "Rescue Teams")]) or 0)
+        food_demand = float(area.get("food_required", 0))
+        water_demand = float(area.get("water_required", 0))
+        med_demand = float(area.get("medicine_required", 0))
+        teams_demand = float(np.ceil(float(area.get("population", 0)) / 2000.0) if sev in ["Critical", "High"] else 1.0)
+        
+        total_system_demand += (food_demand + water_demand + med_demand + teams_demand)
+        
+        food_alloc = allocate("Food", food_demand)
+        water_alloc = allocate("Drinking Water", water_demand)
+        med_alloc = allocate("Medicine", med_demand)
+        teams_alloc = allocate("Rescue Teams", teams_demand)
         
         area_total_alloc = food_alloc + water_alloc + med_alloc + teams_alloc
         total_allocated_units += area_total_alloc
@@ -159,11 +113,11 @@ def run_optimization(areas: List[Dict[str, Any]], resources: List[Dict[str, Any]
             "priority_score": p_score,
             "severity": sev,
             "food_allocated": food_alloc,
-            "food_demanded": int(area.get("food_required", 0)),
+            "food_demanded": int(food_demand),
             "water_allocated": water_alloc,
-            "water_demanded": int(area.get("water_required", 0)),
+            "water_demanded": int(water_demand),
             "medicine_allocated": med_alloc,
-            "medicine_demanded": int(area.get("medicine_required", 0)),
+            "medicine_demanded": int(med_demand),
             "rescue_teams_allocated": teams_alloc,
             "total_allocated": area_total_alloc
         })

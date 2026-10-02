@@ -42,10 +42,6 @@ export const AllocationPage = () => {
     "Generating recommended allocation..."
   ];
 
-  // Fetch initial allocations if any stored
-  useEffect(() => {
-    loadStoredAllocations();
-  }, []);
 
   const loadStoredAllocations = async () => {
     try {
@@ -57,6 +53,8 @@ export const AllocationPage = () => {
       console.error(err);
     }
   };
+
+
 
   const handleRunOptimization = async () => {
     setLoading(true);
@@ -84,6 +82,13 @@ export const AllocationPage = () => {
       console.error('Error solving optimization model:', err.message);
     }
   };
+
+  useEffect(() => {
+    loadStoredAllocations();
+    // Automatically trigger optimization run on initial load to show current allocations
+    handleRunOptimization();
+  }, []);
+
 
   const handleConfirmAllocation = async () => {
     if (!optimizationResult) return;
