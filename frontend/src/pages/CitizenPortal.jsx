@@ -60,7 +60,15 @@ const RESOURCE_OPTIONS = [
   'Rescue Boat'
 ];
 
-const CHENNAI_LOCATIONS = [
+const PRESET_LOCATIONS = [
+  // Hyderabad Locations
+  { id: 'hitec', name: 'Hitec City IT Corridor, Hyderabad', shortName: 'Hitec City', lat: 17.4474, lng: 78.3762 },
+  { id: 'gachibowli', name: 'Gachibowli Financial District, Hyderabad', shortName: 'Gachibowli', lat: 17.4400, lng: 78.3489 },
+  { id: 'banjara', name: 'Banjara Hills, Road No. 1, Hyderabad', shortName: 'Banjara Hills', lat: 17.4156, lng: 78.4483 },
+  { id: 'jubilee', name: 'Jubilee Hills Check Post, Hyderabad', shortName: 'Jubilee Hills', lat: 17.4326, lng: 78.4071 },
+  { id: 'secunderabad', name: 'Secunderabad Railway Station', shortName: 'Secunderabad', lat: 17.4330, lng: 78.5016 },
+  { id: 'ameerpet', name: 'Ameerpet Commercial Hub, Hyderabad', shortName: 'Ameerpet', lat: 17.4375, lng: 78.4482 },
+  // Chennai Locations
   { id: 'tambaram', name: 'Tambaram Railway Station & Bus Terminus, Chennai', shortName: 'Tambaram', lat: 12.9240, lng: 80.1280 },
   { id: 'velachery', name: 'Velachery Main Road & Railway Station, Chennai', shortName: 'Velachery', lat: 12.9750, lng: 80.2210 },
   { id: 'guindy', name: 'Guindy Industrial Estate & Junction, Chennai', shortName: 'Guindy', lat: 13.0067, lng: 80.2020 },
@@ -75,6 +83,7 @@ const CHENNAI_LOCATIONS = [
   { id: 'perambur', name: 'Perambur Loco Works & Flyover Sector, Chennai', shortName: 'Perambur', lat: 13.1118, lng: 80.2315 }
 ];
 
+
 export const CitizenPortal = ({ onBackToAdmin }) => {
   // Form Fields State
   const [name, setName] = useState('');
@@ -85,11 +94,11 @@ export const CitizenPortal = ({ onBackToAdmin }) => {
   const [selectedResources, setSelectedResources] = useState([]);
   const [description, setDescription] = useState('');
   
-  // Location State pre-filled with default Chennai location
-  const [locationName, setLocationName] = useState(CHENNAI_LOCATIONS[0].name);
-  const [latitude, setLatitude] = useState(CHENNAI_LOCATIONS[0].lat);
-  const [longitude, setLongitude] = useState(CHENNAI_LOCATIONS[0].lng);
-  const [selectedLocationId, setSelectedLocationId] = useState(CHENNAI_LOCATIONS[0].id);
+  // Location State pre-filled with default location
+  const [locationName, setLocationName] = useState(PRESET_LOCATIONS[0].name);
+  const [latitude, setLatitude] = useState(PRESET_LOCATIONS[0].lat);
+  const [longitude, setLongitude] = useState(PRESET_LOCATIONS[0].lng);
+  const [selectedLocationId, setSelectedLocationId] = useState(PRESET_LOCATIONS[0].id);
 
   const [imagePreview, setImagePreview] = useState(null);
 
@@ -219,7 +228,7 @@ export const CitizenPortal = ({ onBackToAdmin }) => {
 
     const finalName = name.trim() || 'Citizen (SOS Signal)';
     const finalPhone = phone.trim() || '108 / Emergency Hotline';
-    const finalLocation = locationName.trim() || CHENNAI_LOCATIONS[0].name;
+    const finalLocation = locationName.trim() || PRESET_LOCATIONS[0].name;
     const finalDescription = description.trim() || `Urgent ${disasterType} emergency reported at ${finalLocation}. Immediate rescue support requested by citizen.`;
 
     try {
@@ -232,8 +241,8 @@ export const CitizenPortal = ({ onBackToAdmin }) => {
         resources_needed: selectedResources,
         description: finalDescription,
         location: finalLocation,
-        latitude: latitude ? parseFloat(latitude) : CHENNAI_LOCATIONS[0].lat,
-        longitude: longitude ? parseFloat(longitude) : CHENNAI_LOCATIONS[0].lng,
+        latitude: latitude ? parseFloat(latitude) : PRESET_LOCATIONS[0].lat,
+        longitude: longitude ? parseFloat(longitude) : PRESET_LOCATIONS[0].lng,
         image_url: imagePreview || undefined
       };
 
@@ -278,10 +287,10 @@ export const CitizenPortal = ({ onBackToAdmin }) => {
     setPeopleAffected(1);
     setSelectedResources([]);
     setDescription('');
-    setLocationName(CHENNAI_LOCATIONS[0].name);
-    setLatitude(CHENNAI_LOCATIONS[0].lat);
-    setLongitude(CHENNAI_LOCATIONS[0].lng);
-    setSelectedLocationId(CHENNAI_LOCATIONS[0].id);
+    setLocationName(PRESET_LOCATIONS[0].name);
+    setLatitude(PRESET_LOCATIONS[0].lat);
+    setLongitude(PRESET_LOCATIONS[0].lng);
+    setSelectedLocationId(PRESET_LOCATIONS[0].id);
     setImagePreview(null);
     setSubmittedReport(null);
     setLiveReportStatus(null);
@@ -521,11 +530,11 @@ export const CitizenPortal = ({ onBackToAdmin }) => {
                     </div>
                   )}
 
-                  {/* PRESET CHENNAI LOCATIONS SELECTOR DROPDOWN & QUICK BADGES */}
+                  {/* PRESET HOTSPOT LOCATIONS SELECTOR DROPDOWN & QUICK BADGES */}
                   <div className="bg-slate-950/80 border border-slate-800/80 p-3.5 rounded-xl space-y-2.5">
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-extrabold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <Compass className="w-3.5 h-3.5" /> Quick Select Chennai Disaster Hotspots
+                        <Compass className="w-3.5 h-3.5" /> Quick Select Disaster Hotspots
                       </label>
                       <span className="text-[10px] text-slate-500">Auto fills Lat & Long</span>
                     </div>
@@ -534,12 +543,12 @@ export const CitizenPortal = ({ onBackToAdmin }) => {
                     <select
                       value={selectedLocationId}
                       onChange={(e) => {
-                        const loc = CHENNAI_LOCATIONS.find((l) => l.id === e.target.value);
+                        const loc = PRESET_LOCATIONS.find((l) => l.id === e.target.value);
                         if (loc) handleSelectChennaiLocation(loc);
                       }}
                       className="w-full bg-slate-900 border border-slate-700 text-white text-xs font-semibold rounded-xl px-3 py-2 focus:border-blue-500 focus:outline-none"
                     >
-                      {CHENNAI_LOCATIONS.map((loc) => (
+                      {PRESET_LOCATIONS.map((loc) => (
                         <option key={loc.id} value={loc.id}>
                           📍 {loc.name} (Lat: {loc.lat}, Lng: {loc.lng})
                         </option>
@@ -548,7 +557,7 @@ export const CitizenPortal = ({ onBackToAdmin }) => {
 
                     {/* Quick Selection Buttons */}
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {CHENNAI_LOCATIONS.slice(0, 8).map((loc) => {
+                      {PRESET_LOCATIONS.slice(0, 10).map((loc) => {
                         const isSelected = selectedLocationId === loc.id;
                         return (
                           <button
