@@ -1,0 +1,4 @@
+﻿incident_id,incident_type,severity,reported_latitude,reported_longitude,people_affected,required_resource_type,assigned_resource_id,route_distance_km,estimated_arrival_minutes,assignment_status,last_updated
+INC-DEMO-001,Road accident,High,,,3,Ambulance + emergency hospital,,,,UNASSIGNED_DEMO,
+INC-DEMO-002,Urban flooding,High,,,12,Rescue team + ambulance,,,,UNASSIGNED_DEMO,
+INC-DEMO-003,Fire incident,Critical,,,5,Fire and rescue + ambulance,,,,UNASSIGNED_DEMO,

@@ -24,6 +24,18 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print(f" Supabase init notice: {e}. Defaulting to hybrid memory database engine.")
 
+# Hyderabad & Telangana Emergency Dataset Integration
+from services.emergency_dataset_loader import (
+    load_healthcare_resources,
+    load_emergency_response_teams,
+    load_sample_incidents,
+    format_facilities_for_safe_locations
+)
+
+INITIAL_HEALTHCARE_RESOURCES = load_healthcare_resources()
+INITIAL_RESPONSE_TEAMS = load_emergency_response_teams()
+INITIAL_SAMPLE_INCIDENTS = load_sample_incidents()
+
 # In-Memory Realistic Demo Storage Engine
 INITIAL_DISASTERS = [
     {
@@ -293,7 +305,11 @@ INITIAL_REQUESTS = [
     {"id": "req7", "area_id": "a6", "area_name": "Area F - Hill Pass Ridge", "resource_type": "First Aid Kits", "quantity": 60, "urgency": "Medium", "description": "Landslide trauma injuries requiring basic wound dressing.", "status": "Fulfilled", "created_at": "2026-08-13T09:00:00Z"},
     {"id": "req8", "area_id": "a9", "area_name": "Area I - Industrial Belt Shelter", "resource_type": "Blankets", "quantity": 500, "urgency": "Low", "description": "Overnight temp drops affecting evacuees.", "status": "Pending", "created_at": "2026-08-13T14:00:00Z"},
     {"id": "req9", "area_id": "a10", "area_name": "Area J - Central Railway Depot", "resource_type": "Volunteers", "quantity": 25, "urgency": "Medium", "description": "Assistance needed to unload incoming supply freight trains.", "status": "Pending", "created_at": "2026-08-13T14:30:00Z"},
-    {"id": "req10", "area_id": "a1", "area_name": "Area A - Coastal Sector 1", "resource_type": "Oxygen Cylinders", "quantity": 20, "urgency": "Critical", "description": "Emergency ICU ward setup at field hospital.", "status": "Approved", "created_at": "2026-08-13T15:00:00Z"}
+    {"id": "req10", "area_id": "a1", "area_name": "Area A - Coastal Sector 1", "resource_type": "Oxygen Cylinders", "quantity": 20, "urgency": "Critical", "description": "Emergency ICU ward setup at field hospital.", "status": "Approved", "created_at": "2026-08-13T15:00:00Z"},
+    # Telangana & Hyderabad Demo Incident Allocations
+    {"id": "req_hyd_001", "area_id": "area_hyd_101", "area_name": "Hitec City IT Corridor", "resource_type": "Ambulance", "quantity": 2, "urgency": "High", "description": "Road accident at Cyber Towers junction. 3 people affected. Dispatched 108 Ambulance.", "status": "Approved", "created_at": "2026-10-16T22:15:00Z"},
+    {"id": "req_hyd_002", "area_id": "area_hyd_102", "area_name": "Gachibowli Financial District", "resource_type": "Rescue Teams", "quantity": 2, "urgency": "High", "description": "Urban inundation in residential lowlands. 12 people stranded. Assigned to HYDRAA DRF.", "status": "Approved", "created_at": "2026-10-16T22:18:00Z"},
+    {"id": "req_hyd_003", "area_id": "area_hyd_101", "area_name": "Secunderabad Railway Station", "resource_type": "First Aid Kits", "quantity": 25, "urgency": "Critical", "description": "Commercial fire incident near railway hub. 5 casualties reported. Assigned to Telangana Fire 101 & Gandhi Hospital.", "status": "Approved", "created_at": "2026-10-16T22:20:00Z"}
 ]
 
 INITIAL_TEAMS = [
@@ -301,7 +317,13 @@ INITIAL_TEAMS = [
     {"id": "t2", "team_name": "Bravo NDRF Battalion 4", "leader": "Capt. Rajesh Kumar", "members": 15, "specialization": "Search & Rescue", "location": "Riverbed Township", "status": "Assigned", "assigned_area_id": "a3", "assigned_area_name": "Area C - Riverbed Township"},
     {"id": "t3", "team_name": "Charlie Coast Guard Squad", "leader": "Cmdr. Vikram Sethi", "members": 12, "specialization": "Evacuation", "location": "Fisherman Island", "status": "On Mission", "assigned_area_id": "a5", "assigned_area_name": "Area E - Fisherman Island"},
     {"id": "t4", "team_name": "Delta Hazmat Response", "leader": "Lt. Maya Lin", "members": 6, "specialization": "Hazmat", "location": "Central Depot", "status": "Available", "assigned_area_id": None, "assigned_area_name": None},
-    {"id": "t5", "team_name": "Echo General Relief Contingent", "leader": "Sgt. David Miller", "members": 20, "specialization": "General Relief", "location": "North Harbor", "status": "Available", "assigned_area_id": None, "assigned_area_name": None}
+    {"id": "t5", "team_name": "Echo General Relief Contingent", "leader": "Sgt. David Miller", "members": 20, "specialization": "General Relief", "location": "North Harbor", "status": "Available", "assigned_area_id": None, "assigned_area_name": None},
+    # Telangana Official Emergency Teams & Helplines (emergency_response_teams.csv)
+    {"id": "t_hyd_108", "team_name": "Telangana 108 Ambulance Dispatch Unit 1", "leader": "Coord. Ramesh V", "members": 4, "specialization": "Medical", "location": "Hitec City Fleet Base", "status": "Available", "assigned_area_id": "area_hyd_101", "assigned_area_name": "Hitec City IT Corridor", "contact_number": "108"},
+    {"id": "t_hydraa_drf", "team_name": "HYDRAA Disaster Response Force (DRF)", "leader": "Cmdr. AV Ranganath", "members": 24, "specialization": "Search & Rescue", "location": "GHMC Central Disaster Base", "status": "Available", "assigned_area_id": None, "assigned_area_name": None, "contact_number": "9000113667"},
+    {"id": "t_hyd_fire", "team_name": "Telangana Fire & Heavy Rescue Squad", "leader": "Officer G. Rao", "members": 16, "specialization": "Search & Rescue", "location": "Sanath Nagar Fire Base", "status": "Available", "assigned_area_id": None, "assigned_area_name": None, "contact_number": "101"},
+    {"id": "t_erss_112", "team_name": "Telangana ERSS 112 Rapid Unit", "leader": "Insp. K. V. Reddy", "members": 10, "specialization": "General Relief", "location": "State Command Centre, Banjara Hills", "status": "Available", "assigned_area_id": None, "assigned_area_name": None, "contact_number": "112"},
+    {"id": "t_red_health", "team_name": "RED.Health Emergency Ambulance Fleet", "leader": "Fleet Lead S. Verma", "members": 8, "specialization": "Medical", "location": "Madhapur Station", "status": "Available", "assigned_area_id": None, "assigned_area_name": None, "contact_number": "1800 121 911 911"}
 ]
 
 INITIAL_VEHICLES = [
@@ -372,7 +394,74 @@ INITIAL_ALERTS = [
     {"id": "alt4", "title": "Flash Flood Wave Approaching", "message": "Hydrological telemetry indicates a 1.2m surge wave reaching Riverbed Township within 3 hours.", "severity": "Critical", "status": "Active", "created_at": "2026-08-13T16:10:00Z"}
 ]
 
-INITIAL_REPORTS = []
+INITIAL_REPORTS = [
+    {
+        "id": "rpt_inc_001",
+        "incident_id": "INC-DEMO-001",
+        "reporter_name": "Traffic Warden - Cyber Towers",
+        "reporter_phone": "+91 98490 12345",
+        "disaster_type": "Accident",
+        "location": "Hitec City IT Corridor (Cyber Towers Junction)",
+        "latitude": 17.4504,
+        "longitude": 78.3808,
+        "people_affected": 3,
+        "severity": "High",
+        "urgency": "High",
+        "required_resources": ["Ambulance", "Emergency Hospital Intake"],
+        "assigned_resource_id": "T001 (Telangana 108 Ambulance) & H023 (CARE Hospitals HITEC City)",
+        "route_distance_km": 1.8,
+        "estimated_arrival_minutes": 5,
+        "assignment_status": "Dispatched",
+        "description": "Multi-vehicle collision near Cyber Towers flyover with 3 injured. Immediate ALS ambulance dispatched.",
+        "status": "In Progress",
+        "source": "Emergency Helpline 108",
+        "created_at": "2026-10-16T22:15:00Z"
+    },
+    {
+        "id": "rpt_inc_002",
+        "incident_id": "INC-DEMO-002",
+        "reporter_name": "Resident Welfare Secretary",
+        "reporter_phone": "+91 94401 56789",
+        "disaster_type": "Flood",
+        "location": "Ameerpet / Balkampet Lowland Sector",
+        "latitude": 17.4412,
+        "longitude": 78.4485,
+        "people_affected": 12,
+        "severity": "High",
+        "urgency": "High",
+        "required_resources": ["Rescue Teams", "Ambulance"],
+        "assigned_resource_id": "T007 (HYDRAA Disaster Response Force) & T001 (108 Ambulance)",
+        "route_distance_km": 3.2,
+        "estimated_arrival_minutes": 9,
+        "assignment_status": "En Route",
+        "description": "Monsoon flash inundation with 1.5m flood depth trapping 12 residents inside ground floor apartments.",
+        "status": "In Progress",
+        "source": "Citizen SOS Portal",
+        "created_at": "2026-10-16T22:18:00Z"
+    },
+    {
+        "id": "rpt_inc_003",
+        "incident_id": "INC-DEMO-003",
+        "reporter_name": "Station Master Office",
+        "reporter_phone": "+91 98480 98765",
+        "disaster_type": "Fire",
+        "location": "Secunderabad Railway Station Commercial Complex",
+        "latitude": 17.4335,
+        "longitude": 78.5020,
+        "people_affected": 5,
+        "severity": "Critical",
+        "urgency": "Critical",
+        "required_resources": ["Fire and Rescue", "Ambulance"],
+        "assigned_resource_id": "T003 (Telangana Fire 101) & H002 (Gandhi Hospital)",
+        "route_distance_km": 1.5,
+        "estimated_arrival_minutes": 4,
+        "assignment_status": "On Scene",
+        "description": "Commercial block fire with dense toxic smoke. 5 casualties being stabilized and evacuated to Gandhi Hospital.",
+        "status": "Critical",
+        "source": "ERSS 112 Dispatch",
+        "created_at": "2026-10-16T22:20:00Z"
+    }
+]
 
 INITIAL_SAFE_LOCATIONS = [
     # Hospitals & Trauma Centers
@@ -924,39 +1013,7 @@ INITIAL_SAFE_LOCATIONS = [
     {"id": "fire033", "name": "LB Nagar-2", "facility_type": "Fire Station", "icon": "fire", "latitude": 17.3878, "longitude": 78.3928, "address": "LB Nagar, Hyderabad metro area, Telangana", "phone": "8712685790", "capacity": "5 Rescue Engines", "status": "Operational 24/7"},
     {"id": "fire034", "name": "Amberpet-1", "facility_type": "Fire Station", "icon": "fire", "latitude": 17.3113, "longitude": 78.4137, "address": "Amberpet, Hyderabad, Telangana", "phone": "8712695358", "capacity": "5 Rescue Engines", "status": "Operational 24/7"},
     {"id": "fire035", "name": "Amberpet-2", "facility_type": "Fire Station", "icon": "fire", "latitude": 17.3792, "longitude": 78.478, "address": "Amberpet, Hyderabad, Telangana", "phone": "8712695358", "capacity": "5 Rescue Engines", "status": "Operational 24/7"},
-    {"id": "hosp001", "name": "Osmania General Hospital", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.2991, "longitude": 78.4479, "address": "15-6-103, Afzalgunj Road, Hyderabad, Telangana 500012", "phone": "040-23538846; 040-24600146", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 38},
-    {"id": "hosp002", "name": "Gandhi Hospital", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.2891, "longitude": 78.3903, "address": "Musheerabad, Padmarao Nagar, Secunderabad, Telangana 500003", "phone": "040-27505566", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 45},
-    {"id": "hosp003", "name": "Government Chest Hospital", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.3773, "longitude": 78.4326, "address": "Erragadda area, Hyderabad, Telangana; exact entrance address to confirm", "phone": "040-23814421; 040-23814422; 040-23814423; 040-23814424", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 43},
-    {"id": "hosp004", "name": "Government ENT Hospital", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.338, "longitude": 78.4655, "address": "Koti area, Hyderabad, Telangana; exact entrance address to confirm", "phone": "040-24740245; 040-24742329", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 46},
-    {"id": "hosp005", "name": "Apollo Hospitals, Jubilee Hills", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.4657, "longitude": 78.5542, "address": "Road No. 72, opposite Bharatiya Vidya Bhavan School, Film Nagar, Jubilee Hills, Hyderabad 500096", "phone": "+91 40 6907 1200", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 20},
-    {"id": "hosp006", "name": "Yashoda Hospitals, Somajiguda", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.4683, "longitude": 78.5265, "address": "6-3-905, Raj Bhavan Road, Somajiguda, Hyderabad 500082", "phone": "+91 40 6723 2348", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 18},
-    {"id": "hosp007", "name": "Medicover Hospitals, HITEC City", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.3584, "longitude": 78.5487, "address": "HUDA Techno Enclave, behind Cyber Towers, HITEC City, Hyderabad 500081", "phone": "+91 40 6833 4455", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 15},
-    {"id": "hosp008", "name": "Aster Prime Hospital", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.3486, "longitude": 78.4954, "address": "Plot No. 4, HMDA Maitrivanam, Satyam Theatre Road, Ameerpet, Hyderabad 500038", "phone": "+91 40 4959 4959", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 35},
-    {"id": "fire036", "name": "Fire Station, Film Nagar", "facility_type": "Fire Station", "icon": "fire", "latitude": 17.4154, "longitude": 78.3891, "address": "Road No. 7, Durga Bhawani Nagar, MRC Colony, Jubilee Hills, Hyderabad 500096", "phone": "+91 40 2344 2953", "capacity": "5 Rescue Engines", "status": "Operational 24/7"},
-    {"id": "fire037", "name": "Fire Station, Sanath Nagar", "facility_type": "Fire Station", "icon": "fire", "latitude": 17.3911, "longitude": 78.4414, "address": "Sanath Nagar Main Road, Sanath Nagar, Hyderabad 500018", "phone": "8712699430", "capacity": "5 Rescue Engines", "status": "Operational 24/7"},
-    {"id": "resp001", "name": "Telangana Ambulance Emergency Service", "facility_type": "Ambulance Hub", "icon": "ambulance", "latitude": 17.4746, "longitude": 78.4693, "address": "Statewide dispatch; exact local ambulance base depends on incident", "phone": "108", "capacity": "10 Ambulances", "status": "Operational 24/7"},
-    {"id": "resp002", "name": "Ambulance Helpline", "facility_type": "Ambulance Hub", "icon": "ambulance", "latitude": 17.4427, "longitude": 78.5112, "address": "Statewide helpline; local service coverage to be confirmed", "phone": "102", "capacity": "10 Ambulances", "status": "Operational 24/7"},
-    {"id": "resp003", "name": "Integrated Emergency Response Support System", "facility_type": "Relief Shelter", "icon": "shelter", "latitude": 17.4278, "longitude": 78.5836, "address": "Statewide emergency dispatch", "phone": "112", "capacity": "Unknown Capacity", "status": "Operational 24/7"},
-    {"id": "resp004", "name": "Fire and Rescue Emergency Helpline", "facility_type": "Fire Station", "icon": "fire", "latitude": 17.4178, "longitude": 78.5156, "address": "Statewide emergency dispatch", "phone": "101", "capacity": "5 Rescue Engines", "status": "Operational 24/7"},
-    {"id": "resp005", "name": "Disaster Helpline", "facility_type": "Control Room", "icon": "police", "latitude": 17.4025, "longitude": 78.43, "address": "Hyderabad district control / disaster response", "phone": "1077", "capacity": "Command Center", "status": "Operational 24/7"},
-    {"id": "resp006", "name": "State Control Room", "facility_type": "Control Room", "icon": "police", "latitude": 17.4655, "longitude": 78.4669, "address": "Telangana state control room", "phone": "1070", "capacity": "Command Center", "status": "Operational 24/7"}
-,
-    {"id": "hosp009", "name": "District Hospital King Koti", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.3525, "longitude": 78.4461, "address": "King Koti / Hyderguda, Hyderabad, Telangana 500001", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 48},
-    {"id": "hosp010", "name": "Area Hospital Nampally", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.2873, "longitude": 78.4077, "address": "Nampally, Hyderabad, Telangana", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 17},
-    {"id": "hosp011", "name": "Area Hospital Malakpet", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.4381, "longitude": 78.4675, "address": "Malakpet, Hyderabad, Telangana", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 17},
-    {"id": "hosp012", "name": "Area Hospital Golconda", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.4451, "longitude": 78.5651, "address": "Golconda, Hyderabad, Telangana", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 16},
-    {"id": "hosp013", "name": "Area Hospital Kamatipura", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.4669, "longitude": 78.4195, "address": "Kamatipura, Hyderabad, Telangana", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 30},
-    {"id": "hosp014", "name": "Area Hospital Bandlaguda", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.3425, "longitude": 78.4882, "address": "Bandlaguda, Hyderabad, Telangana", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 30},
-    {"id": "hosp015", "name": "Area Hospital Dabeerpura", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.4491, "longitude": 78.4068, "address": "Dabeerpura, Hyderabad, Telangana", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 12},
-    {"id": "hosp016", "name": "District Hospital Tandur", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.3623, "longitude": 78.5373, "address": "Tandur, Vikarabad district, Telangana", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 33},
-    {"id": "hosp017", "name": "District Hospital Sangareddy", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.4514, "longitude": 78.547, "address": "Sangareddy, Telangana", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 13},
-    {"id": "hosp018", "name": "Government Area Hospital, Gachibowli/Kondapur", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.4026, "longitude": 78.4082, "address": "Kondapur Main Road, Masjid Banda, Gachibowli, Hyderabad 500084", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 22},
-    {"id": "hosp019", "name": "KIMS-Sunshine Hospitals, Begumpet", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.3535, "longitude": 78.5137, "address": "Metro Pillar C1327, beside Jamia Masjid, Prakash Nagar, Begumpet, Hyderabad 500003", "phone": "+91 40 4455 0000", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 27},
-    {"id": "hosp020", "name": "District Hospital King Koti (map listing)", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.2994, "longitude": 78.5296, "address": "3-5-773, Hyderguda, King Koti Road, Hyderabad 500001", "phone": "+91 80085 553878", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 29},
-    {"id": "hosp021", "name": "Government General and Chest Hospital, Erragadda", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.3611, "longitude": 78.523, "address": "Kalyan Nagar Phase 1, Sunder Nagar, Hyderabad 500038", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 23},
-    {"id": "hosp022", "name": "Apollo Hospitals, Secunderabad", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.4416, "longitude": 78.5666, "address": "Secunderabad, Telangana; exact facility address to verify", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 14},
-    {"id": "hosp023", "name": "Continental Hospitals", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.3141, "longitude": 78.521, "address": "Nanakramguda, Financial District, Hyderabad, Telangana", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 41},
-    {"id": "hosp024", "name": "CARE Hospitals, HITEC City", "facility_type": "Hospital", "icon": "hospital", "latitude": 17.4652, "longitude": 78.5465, "address": "HITEC City / Madhapur area, Hyderabad, Telangana", "phone": "Unknown", "capacity": "150 Emergency Beds", "status": "Operational 24/7", "icu_available": 29},
+] + format_facilities_for_safe_locations(INITIAL_HEALTHCARE_RESOURCES) + [
     {"id": "fire038", "name": "Jeedimetla Fire Station", "facility_type": "Fire Station", "icon": "fire", "latitude": 17.4272, "longitude": 78.4029, "address": "Jeedimetla, Hyderabad metro area, Telangana", "phone": "Unknown", "capacity": "5 Rescue Engines", "status": "Operational 24/7"},
     {"id": "fire039", "name": "Model Fire Station, Gachibowli", "facility_type": "Fire Station", "icon": "fire", "latitude": 17.464, "longitude": 78.4398, "address": "Gachibowli, Hyderabad, Telangana", "phone": "Unknown", "capacity": "5 Rescue Engines", "status": "Operational 24/7"},
     {"id": "fire040", "name": "Cherrapally Fire Station", "facility_type": "Fire Station", "icon": "fire", "latitude": 17.4816, "longitude": 78.3928, "address": "Cherlapally / Cherrapally area, Telangana", "phone": "Unknown", "capacity": "5 Rescue Engines", "status": "Operational 24/7"},
@@ -978,9 +1035,7 @@ INITIAL_SAFE_LOCATIONS = [
     {"id": "fire056", "name": "Chevella Fire Station", "facility_type": "Fire Station", "icon": "fire", "latitude": 17.2984, "longitude": 78.5745, "address": "Chevella, Rangareddy district, Telangana", "phone": "Unknown", "capacity": "5 Rescue Engines", "status": "Operational 24/7"},
     {"id": "resp007", "name": "digniMuv Ambulance Service", "facility_type": "Ambulance Hub", "icon": "ambulance", "latitude": 17.473, "longitude": 78.5032, "address": "2nd Floor, Prasad Hospitals, Marrichettu Road, Manikonda, Hyderabad 500089", "phone": "+91 91007 10000", "capacity": "10 Ambulances", "status": "Operational 24/7"},
     {"id": "resp008", "name": "Ambulance Service, Banjara Hills/Somajiguda", "facility_type": "Ambulance Hub", "icon": "ambulance", "latitude": 17.3129, "longitude": 78.4401, "address": "Matha Nagar, Banjara Hills/Somajiguda area, Hyderabad 500082", "phone": "+91 99485 82750", "capacity": "10 Ambulances", "status": "Operational 24/7"}
-
 ]
-
 
 # Database Access Interface
 class LocalDatabaseStore:
@@ -995,5 +1050,23 @@ class LocalDatabaseStore:
         self.disaster_reports = list(INITIAL_REPORTS)
         self.safe_locations = list(INITIAL_SAFE_LOCATIONS)
         self.allocations = []
+        # Official Dataset Storage
+        self.healthcare_resources = list(INITIAL_HEALTHCARE_RESOURCES)
+        self.response_teams = list(INITIAL_RESPONSE_TEAMS)
+        self.sample_incidents = list(INITIAL_SAMPLE_INCIDENTS)
+
+    def get_healthcare_resources(self, ownership: str = None, facility_type: str = None):
+        res = self.healthcare_resources
+        if ownership:
+            res = [r for r in res if r.get("ownership", "").lower() == ownership.lower()]
+        if facility_type:
+            res = [r for r in res if facility_type.lower() in r.get("facility_type", "").lower()]
+        return res
+
+    def get_response_teams(self):
+        return self.response_teams
+
+    def get_sample_incidents(self):
+        return self.sample_incidents
 
 db_store = LocalDatabaseStore()
