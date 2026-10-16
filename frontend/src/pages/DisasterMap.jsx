@@ -117,7 +117,10 @@ const MAP_PROVIDERS = [
     attribution: 'Custom Map Provider',
     requiresKey: true
   }
-,
+];
+
+// Hyderabad & Telangana facility data (Fire Stations, Hospitals, Ambulance Hubs)
+const INITIAL_FACILITIES = [
   {
     id: 'fire001',
     name: 'Secunderabad',
@@ -1477,240 +1480,240 @@ const fetchOnRoadDrivingRoute = async (origin, dest, tomtomKey = '') => {
 };
 
 const DEFAULT_SAFE_LOCATIONS = [
-  // Hospitals (14)
+  // Government Hospitals – Hyderabad & Telangana (from verified dataset)
   {
     id: 'loc_h1',
-    name: 'Apollo Emergency & Trauma Hospital',
+    name: 'Osmania General Hospital',
     facility_type: 'Hospital',
-    address: '21 Greams Lane, Thousand Lights, Chennai',
-    latitude: 13.0604,
-    longitude: 80.2496,
-    capacity: '250 Emergency Beds (35 ICU)',
+    address: 'Afzalgunj, Hyderabad, Telangana 500012',
+    latitude: 17.3762,
+    longitude: 78.4802,
+    capacity: '1000+ Emergency Beds',
     status: 'Operational 24/7',
-    phone: '+91 44 2829 0200'
+    phone: '040-23538846'
   },
   {
     id: 'loc_h2',
-    name: 'Government General Hospital & ICU Hub (RGGH)',
+    name: 'Gandhi Hospital',
     facility_type: 'Hospital',
-    address: 'EVR Periyar Salai, Park Town, Chennai',
-    latitude: 13.0815,
-    longitude: 80.2777,
-    capacity: '500 Emergency Beds (60 ICU)',
+    address: 'Musheerabad, Secunderabad, Telangana 500003',
+    latitude: 17.4256,
+    longitude: 78.4989,
+    capacity: '1100+ Emergency Beds',
     status: 'Operational 24/7',
-    phone: '+91 44 2530 5000'
+    phone: '040-27505566'
   },
   {
     id: 'loc_h3',
-    name: 'Tambaram District Trauma & Surgical Center',
+    name: "Nizam's Institute of Medical Sciences (NIMS)",
     facility_type: 'Hospital',
-    address: 'GST Road, Tambaram Sanatorium, Chennai',
-    latitude: 12.9240,
-    longitude: 80.1290,
-    capacity: '180 Emergency Beds (20 ICU)',
+    address: 'Punjagutta, Hyderabad, Telangana 500082',
+    latitude: 17.4144,
+    longitude: 78.4482,
+    capacity: 'Super-speciality Tertiary Care',
     status: 'Operational 24/7',
-    phone: '+91 44 2241 8000'
+    phone: '040-23489999'
   },
   {
     id: 'loc_h4',
-    name: 'Stanley Medical Apex Trauma Care',
+    name: 'Niloufer Hospital',
     facility_type: 'Hospital',
-    address: 'Old Jail Road, Royapuram, Chennai',
-    latitude: 13.1030,
-    longitude: 80.2870,
-    capacity: '320 Emergency Beds (40 ICU)',
+    address: 'Red Hills, Hyderabad, Telangana',
+    latitude: 17.4033,
+    longitude: 78.4727,
+    capacity: 'Paediatric & Maternal-Child Care',
     status: 'Operational 24/7',
-    phone: '+91 44 2528 1351'
+    phone: '040-23314095'
   },
   {
     id: 'loc_h5',
-    name: 'Chromepet Emergency Medical Base',
+    name: 'Government Chest Hospital',
     facility_type: 'Hospital',
-    address: 'Station Road, Chromepet, Chennai',
-    latitude: 12.9510,
-    longitude: 80.1410,
-    capacity: '120 Emergency Beds (15 ICU)',
+    address: 'Erragadda, Hyderabad, Telangana',
+    latitude: 17.4372,
+    longitude: 78.4284,
+    capacity: 'Chest & Respiratory Speciality',
     status: 'Operational 24/7',
-    phone: '+91 44 2265 1122'
+    phone: '040-23814939'
   },
   {
     id: 'loc_h6',
-    name: 'MIOT International Trauma Hospital',
+    name: 'Government Fever Hospital',
     facility_type: 'Hospital',
-    address: 'Mount-Poonamallee Road, Manapakkam / Porur',
-    latitude: 13.0247,
-    longitude: 80.1785,
-    capacity: '300 Emergency ICU Beds (45 ICU)',
+    address: 'Nallakunta, Hyderabad, Telangana',
+    latitude: 17.4110,
+    longitude: 78.5017,
+    capacity: 'Infectious Disease & Fever Care',
     status: 'Operational 24/7',
-    phone: '+91 44 4200 2288'
+    phone: '040-27664285'
   },
   {
     id: 'loc_h7',
-    name: 'Sri Ramachandra Medical Center & Emergency Hub',
+    name: 'King Koti Hospital',
     facility_type: 'Hospital',
-    address: 'No.1 Ramachandra Nagar, Porur, Chennai',
-    latitude: 13.0375,
-    longitude: 80.1412,
-    capacity: '450 Emergency Beds (55 ICU)',
+    address: 'King Koti, Hyderabad, Telangana',
+    latitude: 17.3925,
+    longitude: 78.4812,
+    capacity: 'General Emergency Services',
     status: 'Operational 24/7',
-    phone: '+91 44 4592 8500'
+    phone: '040-24758827'
   },
   {
     id: 'loc_h8',
-    name: 'SIMS Super Specialty Emergency Hospital',
+    name: 'Malakpet Hospital',
     facility_type: 'Hospital',
-    address: 'Metro Station Complex, Vadapalani, Chennai',
-    latitude: 13.0512,
-    longitude: 80.2120,
-    capacity: '280 Trauma Beds (30 ICU)',
+    address: 'Malakpet, Hyderabad, Telangana',
+    latitude: 17.3592,
+    longitude: 78.5121,
+    capacity: 'General Emergency Services',
     status: 'Operational 24/7',
-    phone: '+91 44 2000 2000'
+    phone: '040-24527320'
   },
   {
     id: 'loc_h9',
-    name: 'Prashanth Emergency Hospital & Trauma Center',
+    name: 'Apollo Hospitals, Jubilee Hills',
     facility_type: 'Hospital',
-    address: 'Velachery Main Road, Velachery, Chennai',
-    latitude: 12.9780,
-    longitude: 80.2220,
-    capacity: '190 Emergency Beds (25 ICU)',
+    address: 'Road No. 92, Jubilee Hills, Hyderabad 500096',
+    latitude: 17.4318,
+    longitude: 78.4074,
+    capacity: '24-hour Emergency Department',
     status: 'Operational 24/7',
-    phone: '+91 44 4227 7777'
+    phone: '040-6907 1200'
   },
   {
     id: 'loc_h10',
-    name: 'Gleneagles Global Trauma & Emergency City',
+    name: 'CARE Hospitals, HITEC City',
     facility_type: 'Hospital',
-    address: 'Cheran Nagar, Perumbakkam / Medavakkam',
-    latitude: 12.9062,
-    longitude: 80.1983,
-    capacity: '350 Critical Care Beds (50 ICU)',
+    address: 'Old Mumbai Highway, HITEC City, Hyderabad 500032',
+    latitude: 17.4474,
+    longitude: 78.3762,
+    capacity: '24-hour Emergency Hospital',
     status: 'Operational 24/7',
-    phone: '+91 44 4477 7000'
+    phone: '040-6810 6589'
   },
   {
     id: 'loc_h11',
-    name: 'Fortis Malar Emergency Care',
+    name: 'CARE Hospitals, Malakpet',
     facility_type: 'Hospital',
-    address: 'First Main Road, Gandhi Nagar, Adyar, Chennai',
-    latitude: 13.0041,
-    longitude: 80.2568,
-    capacity: '160 Emergency Beds (20 ICU)',
+    address: 'Chaderghat Road, Hyderabad 500024',
+    latitude: 17.3618,
+    longitude: 78.4978,
+    capacity: '24-hour Emergency & Trauma',
     status: 'Operational 24/7',
-    phone: '+91 44 4289 2222'
+    phone: '040-6810 6589'
   },
   {
     id: 'loc_h12',
-    name: 'Sir Ivan Stedeford Emergency Hospital',
+    name: 'OMNI Hospitals, Kukatpally',
     facility_type: 'Hospital',
-    address: 'Ambattur OT, Ambattur, Chennai',
-    latitude: 13.1180,
-    longitude: 80.1550,
-    capacity: '140 Emergency Beds (18 ICU)',
+    address: 'Mumbai Highway, Kukatpally, Hyderabad 500072',
+    latitude: 17.4947,
+    longitude: 78.3996,
+    capacity: '24-hour Emergency Department',
     status: 'Operational 24/7',
-    phone: '+91 44 2658 0137'
+    phone: '+91 88801 01000'
   },
   {
     id: 'loc_h13',
-    name: 'Avadi Ordnance Emergency Medical Unit',
+    name: 'Nightingale Super Speciality Hospital',
     facility_type: 'Hospital',
-    address: 'OFR Estate, Avadi, Chennai',
-    latitude: 13.1250,
-    longitude: 80.0980,
-    capacity: '150 Emergency Beds (22 ICU)',
+    address: 'X Roads Santoshnagar, Nagarjuna Sagar Ring Road, Hyderabad 500059',
+    latitude: 17.3329,
+    longitude: 78.5227,
+    capacity: '24-hour Emergency Services',
     status: 'Operational 24/7',
-    phone: '+91 44 2638 2141'
+    phone: '+91 99890 30085'
   },
   {
     id: 'loc_h14',
-    name: 'Madhavaram Community Emergency Hospital',
+    name: 'Amor Hospitals, Kukatpally',
     facility_type: 'Hospital',
-    address: 'GNT Road, Madhavaram, Chennai',
-    latitude: 13.1480,
-    longitude: 80.2310,
-    capacity: '110 Emergency Beds (12 ICU)',
+    address: 'NH65, Habeeb Nagar, Kukatpally, Hyderabad 500072',
+    latitude: 17.4931,
+    longitude: 78.3949,
+    capacity: '24-hour Emergency & Critical Care',
     status: 'Operational 24/7',
-    phone: '+91 44 2553 0100'
+    phone: '040-6606 9999'
   },
 
-  // Relief Shelters (4)
+  // Relief Shelters – Hyderabad
   {
     id: 'loc_s1',
-    name: 'Tambaram Indoor Stadium Relief Shelter',
+    name: 'Gachibowli Indoor Stadium Relief Shelter',
     facility_type: 'Relief Shelter',
-    address: 'Gandhi Road, West Tambaram, Chennai',
-    latitude: 12.9200,
-    longitude: 80.1250,
-    capacity: '1,500 Evacuees (Food/Water Active)',
+    address: 'Gachibowli, Hyderabad, Telangana 500032',
+    latitude: 17.4401,
+    longitude: 78.3489,
+    capacity: '3,000 Evacuees (Food & Water Active)',
     status: 'Active Safe Zone',
     phone: '1800-425-1088'
   },
   {
     id: 'loc_s2',
-    name: 'Central Community Disaster Shelter',
+    name: 'LB Nagar Community Disaster Shelter',
     facility_type: 'Relief Shelter',
-    address: 'Ripon Building Complex, Central, Chennai',
-    latitude: 13.0850,
-    longitude: 80.2650,
-    capacity: '3,000 Evacuees (Abundant Supplies)',
+    address: 'LB Nagar, Hyderabad, Telangana',
+    latitude: 17.3468,
+    longitude: 78.5519,
+    capacity: '2,000 Evacuees (Stocked)',
     status: 'Active Safe Zone',
     phone: '1800-425-1089'
   },
   {
     id: 'loc_s3',
-    name: 'North Harbor Coastal Evacuation Base',
+    name: 'HICC Novotel Relief Camp',
     facility_type: 'Relief Shelter',
-    address: 'Harbor High School Grounds, Chennai',
-    latitude: 13.1250,
-    longitude: 80.2950,
-    capacity: '2,000 Evacuees (Stocked)',
+    address: 'Novotel Complex, HICC, Hyderabad',
+    latitude: 17.4216,
+    longitude: 78.3617,
+    capacity: '2,500 Evacuees (Medical Care On-site)',
     status: 'Active Safe Zone',
     phone: '1800-425-1090'
   },
   {
     id: 'loc_s4',
-    name: 'Western Basin Disaster Relief Camp',
+    name: 'Secunderabad Parade Ground Camp',
     facility_type: 'Relief Shelter',
-    address: 'Koyambedu Sports Complex, Chennai',
-    latitude: 13.0700,
-    longitude: 80.1950,
-    capacity: '2,500 Evacuees (Medical Care On-site)',
+    address: 'Parade Ground, Secunderabad, Telangana 500003',
+    latitude: 17.4338,
+    longitude: 78.5005,
+    capacity: '5,000 Evacuees (Abundant Supplies)',
     status: 'Active Safe Zone',
     phone: '1800-425-1091'
   },
 
-  // Fire & Rescue Stations (3)
+  // Fire & Rescue Stations – Hyderabad (key central stations)
   {
     id: 'loc_f1',
-    name: 'Tambaram Fire & Rescue Station Headquarters',
+    name: 'Secunderabad Fire Station',
     facility_type: 'Fire Station',
-    address: 'Velachery Main Road, Tambaram, Chennai',
-    latitude: 12.9230,
-    longitude: 80.1290,
-    capacity: '8 Fire Tenders • Water Pump Trucks',
-    status: 'High Alert Dispatch Base',
+    address: 'Secunderabad, Hyderabad, Telangana',
+    latitude: 17.4338,
+    longitude: 78.4998,
+    capacity: '8 Fire Tenders & Rescue Engines',
+    status: 'Operational 24/7',
     phone: '101'
   },
   {
     id: 'loc_f2',
-    name: 'Kilpauk Fire & Disaster Response Base',
+    name: 'Musheerabad Fire Station',
     facility_type: 'Fire Station',
-    address: 'Poonamallee High Road, Kilpauk, Chennai',
-    latitude: 13.0780,
-    longitude: 80.2410,
-    capacity: '12 Emergency Vehicles • Rescue Cutters',
-    status: 'High Alert Dispatch Base',
+    address: 'Musheerabad, Hyderabad, Telangana',
+    latitude: 17.4122,
+    longitude: 78.4852,
+    capacity: '6 Fire Tenders & Rescue Engines',
+    status: 'Operational 24/7',
     phone: '101'
   },
   {
     id: 'loc_f3',
-    name: 'Royapuram Harbor Fire & Hazmat Station',
+    name: 'Panjagutta Fire Station',
     facility_type: 'Fire Station',
-    address: 'Beach Road, Royapuram, Chennai',
-    latitude: 13.1080,
-    longitude: 80.2910,
-    capacity: '6 Hazmat Trucks • High Pressure Pumps',
-    status: 'High Alert Dispatch Base',
+    address: 'Panjagutta, Hyderabad, Telangana',
+    latitude: 17.4218,
+    longitude: 78.4483,
+    capacity: '5 Fire Tenders & Rescue Engines',
+    status: 'Operational 24/7',
     phone: '101'
   }
 ];
