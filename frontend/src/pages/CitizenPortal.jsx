@@ -61,13 +61,16 @@ const RESOURCE_OPTIONS = [
 ];
 
 const PRESET_LOCATIONS = [
-  // Hyderabad Locations
+  // Hyderabad & Telangana Locations
   { id: 'hitec', name: 'Hitec City IT Corridor, Hyderabad', shortName: 'Hitec City', lat: 17.4474, lng: 78.3762 },
   { id: 'gachibowli', name: 'Gachibowli Financial District, Hyderabad', shortName: 'Gachibowli', lat: 17.4400, lng: 78.3489 },
   { id: 'banjara', name: 'Banjara Hills, Road No. 1, Hyderabad', shortName: 'Banjara Hills', lat: 17.4156, lng: 78.4483 },
   { id: 'jubilee', name: 'Jubilee Hills Check Post, Hyderabad', shortName: 'Jubilee Hills', lat: 17.4326, lng: 78.4071 },
   { id: 'secunderabad', name: 'Secunderabad Railway Station', shortName: 'Secunderabad', lat: 17.4330, lng: 78.5016 },
   { id: 'ameerpet', name: 'Ameerpet Commercial Hub, Hyderabad', shortName: 'Ameerpet', lat: 17.4375, lng: 78.4482 },
+  { id: 'vikarabad', name: 'Vikarabad Town Center & Railway Station, Telangana', shortName: 'Vikarabad', lat: 17.3369, lng: 77.9021 },
+  { id: 'tandur', name: 'Tandur Town Hub, Vikarabad district, Telangana', shortName: 'Tandur', lat: 17.2463, lng: 77.5786 },
+  { id: 'sangareddy', name: 'Sangareddy District Headquarters, Telangana', shortName: 'Sangareddy', lat: 17.6229, lng: 78.0872 },
   // Chennai Locations
   { id: 'tambaram', name: 'Tambaram Railway Station & Bus Terminus, Chennai', shortName: 'Tambaram', lat: 12.9240, lng: 80.1280 },
   { id: 'velachery', name: 'Velachery Main Road & Railway Station, Chennai', shortName: 'Velachery', lat: 12.9750, lng: 80.2210 },

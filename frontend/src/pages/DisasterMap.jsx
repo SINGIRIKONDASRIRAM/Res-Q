@@ -1479,244 +1479,58 @@ const fetchOnRoadDrivingRoute = async (origin, dest, tomtomKey = '') => {
   return { path: [origin, dest], distanceKm: '2.5', travelMins: 5 };
 };
 
-const DEFAULT_SAFE_LOCATIONS = [
-  // Government Hospitals – Hyderabad & Telangana (from verified dataset)
-  {
-    id: 'loc_h1',
-    name: 'Osmania General Hospital',
-    facility_type: 'Hospital',
-    address: 'Afzalgunj, Hyderabad, Telangana 500012',
-    latitude: 17.3762,
-    longitude: 78.4802,
-    capacity: '1000+ Emergency Beds',
-    status: 'Operational 24/7',
-    phone: '040-23538846'
-  },
-  {
-    id: 'loc_h2',
-    name: 'Gandhi Hospital',
-    facility_type: 'Hospital',
-    address: 'Musheerabad, Secunderabad, Telangana 500003',
-    latitude: 17.4256,
-    longitude: 78.4989,
-    capacity: '1100+ Emergency Beds',
-    status: 'Operational 24/7',
-    phone: '040-27505566'
-  },
-  {
-    id: 'loc_h3',
-    name: "Nizam's Institute of Medical Sciences (NIMS)",
-    facility_type: 'Hospital',
-    address: 'Punjagutta, Hyderabad, Telangana 500082',
-    latitude: 17.4144,
-    longitude: 78.4482,
-    capacity: 'Super-speciality Tertiary Care',
-    status: 'Operational 24/7',
-    phone: '040-23489999'
-  },
-  {
-    id: 'loc_h4',
-    name: 'Niloufer Hospital',
-    facility_type: 'Hospital',
-    address: 'Red Hills, Hyderabad, Telangana',
-    latitude: 17.4033,
-    longitude: 78.4727,
-    capacity: 'Paediatric & Maternal-Child Care',
-    status: 'Operational 24/7',
-    phone: '040-23314095'
-  },
-  {
-    id: 'loc_h5',
-    name: 'Government Chest Hospital',
-    facility_type: 'Hospital',
-    address: 'Erragadda, Hyderabad, Telangana',
-    latitude: 17.4372,
-    longitude: 78.4284,
-    capacity: 'Chest & Respiratory Speciality',
-    status: 'Operational 24/7',
-    phone: '040-23814939'
-  },
-  {
-    id: 'loc_h6',
-    name: 'Government Fever Hospital',
-    facility_type: 'Hospital',
-    address: 'Nallakunta, Hyderabad, Telangana',
-    latitude: 17.4110,
-    longitude: 78.5017,
-    capacity: 'Infectious Disease & Fever Care',
-    status: 'Operational 24/7',
-    phone: '040-27664285'
-  },
-  {
-    id: 'loc_h7',
-    name: 'King Koti Hospital',
-    facility_type: 'Hospital',
-    address: 'King Koti, Hyderabad, Telangana',
-    latitude: 17.3925,
-    longitude: 78.4812,
-    capacity: 'General Emergency Services',
-    status: 'Operational 24/7',
-    phone: '040-24758827'
-  },
-  {
-    id: 'loc_h8',
-    name: 'Malakpet Hospital',
-    facility_type: 'Hospital',
-    address: 'Malakpet, Hyderabad, Telangana',
-    latitude: 17.3592,
-    longitude: 78.5121,
-    capacity: 'General Emergency Services',
-    status: 'Operational 24/7',
-    phone: '040-24527320'
-  },
-  {
-    id: 'loc_h9',
-    name: 'Apollo Hospitals, Jubilee Hills',
-    facility_type: 'Hospital',
-    address: 'Road No. 92, Jubilee Hills, Hyderabad 500096',
-    latitude: 17.4318,
-    longitude: 78.4074,
-    capacity: '24-hour Emergency Department',
-    status: 'Operational 24/7',
-    phone: '040-6907 1200'
-  },
-  {
-    id: 'loc_h10',
-    name: 'CARE Hospitals, HITEC City',
-    facility_type: 'Hospital',
-    address: 'Old Mumbai Highway, HITEC City, Hyderabad 500032',
-    latitude: 17.4474,
-    longitude: 78.3762,
-    capacity: '24-hour Emergency Hospital',
-    status: 'Operational 24/7',
-    phone: '040-6810 6589'
-  },
-  {
-    id: 'loc_h11',
-    name: 'CARE Hospitals, Malakpet',
-    facility_type: 'Hospital',
-    address: 'Chaderghat Road, Hyderabad 500024',
-    latitude: 17.3618,
-    longitude: 78.4978,
-    capacity: '24-hour Emergency & Trauma',
-    status: 'Operational 24/7',
-    phone: '040-6810 6589'
-  },
-  {
-    id: 'loc_h12',
-    name: 'OMNI Hospitals, Kukatpally',
-    facility_type: 'Hospital',
-    address: 'Mumbai Highway, Kukatpally, Hyderabad 500072',
-    latitude: 17.4947,
-    longitude: 78.3996,
-    capacity: '24-hour Emergency Department',
-    status: 'Operational 24/7',
-    phone: '+91 88801 01000'
-  },
-  {
-    id: 'loc_h13',
-    name: 'Nightingale Super Speciality Hospital',
-    facility_type: 'Hospital',
-    address: 'X Roads Santoshnagar, Nagarjuna Sagar Ring Road, Hyderabad 500059',
-    latitude: 17.3329,
-    longitude: 78.5227,
-    capacity: '24-hour Emergency Services',
-    status: 'Operational 24/7',
-    phone: '+91 99890 30085'
-  },
-  {
-    id: 'loc_h14',
-    name: 'Amor Hospitals, Kukatpally',
-    facility_type: 'Hospital',
-    address: 'NH65, Habeeb Nagar, Kukatpally, Hyderabad 500072',
-    latitude: 17.4931,
-    longitude: 78.3949,
-    capacity: '24-hour Emergency & Critical Care',
-    status: 'Operational 24/7',
-    phone: '040-6606 9999'
-  },
-
-  // Relief Shelters – Hyderabad
+const DEFAULT_SHELTERS = [
   {
     id: 'loc_s1',
     name: 'Gachibowli Indoor Stadium Relief Shelter',
     facility_type: 'Relief Shelter',
+    icon: 'shelter',
     address: 'Gachibowli, Hyderabad, Telangana 500032',
     latitude: 17.4401,
     longitude: 78.3489,
     capacity: '3,000 Evacuees (Food & Water Active)',
     status: 'Active Safe Zone',
-    phone: '1800-425-1088'
+    phone: '1800-425-1088',
   },
   {
     id: 'loc_s2',
     name: 'LB Nagar Community Disaster Shelter',
     facility_type: 'Relief Shelter',
+    icon: 'shelter',
     address: 'LB Nagar, Hyderabad, Telangana',
     latitude: 17.3468,
     longitude: 78.5519,
     capacity: '2,000 Evacuees (Stocked)',
     status: 'Active Safe Zone',
-    phone: '1800-425-1089'
+    phone: '1800-425-1089',
   },
   {
     id: 'loc_s3',
     name: 'HICC Novotel Relief Camp',
     facility_type: 'Relief Shelter',
+    icon: 'shelter',
     address: 'Novotel Complex, HICC, Hyderabad',
     latitude: 17.4216,
     longitude: 78.3617,
     capacity: '2,500 Evacuees (Medical Care On-site)',
     status: 'Active Safe Zone',
-    phone: '1800-425-1090'
+    phone: '1800-425-1090',
   },
   {
     id: 'loc_s4',
     name: 'Secunderabad Parade Ground Camp',
     facility_type: 'Relief Shelter',
+    icon: 'shelter',
     address: 'Parade Ground, Secunderabad, Telangana 500003',
     latitude: 17.4338,
     longitude: 78.5005,
     capacity: '5,000 Evacuees (Abundant Supplies)',
     status: 'Active Safe Zone',
-    phone: '1800-425-1091'
+    phone: '1800-425-1091',
   },
-
-  // Fire & Rescue Stations – Hyderabad (key central stations)
-  {
-    id: 'loc_f1',
-    name: 'Secunderabad Fire Station',
-    facility_type: 'Fire Station',
-    address: 'Secunderabad, Hyderabad, Telangana',
-    latitude: 17.4338,
-    longitude: 78.4998,
-    capacity: '8 Fire Tenders & Rescue Engines',
-    status: 'Operational 24/7',
-    phone: '101'
-  },
-  {
-    id: 'loc_f2',
-    name: 'Musheerabad Fire Station',
-    facility_type: 'Fire Station',
-    address: 'Musheerabad, Hyderabad, Telangana',
-    latitude: 17.4122,
-    longitude: 78.4852,
-    capacity: '6 Fire Tenders & Rescue Engines',
-    status: 'Operational 24/7',
-    phone: '101'
-  },
-  {
-    id: 'loc_f3',
-    name: 'Panjagutta Fire Station',
-    facility_type: 'Fire Station',
-    address: 'Panjagutta, Hyderabad, Telangana',
-    latitude: 17.4218,
-    longitude: 78.4483,
-    capacity: '5 Fire Tenders & Rescue Engines',
-    status: 'Operational 24/7',
-    phone: '101'
-  }
 ];
+
+const DEFAULT_SAFE_LOCATIONS = [...DEFAULT_SHELTERS, ...INITIAL_FACILITIES];
 
 const DEFAULT_AREAS = [
   {
